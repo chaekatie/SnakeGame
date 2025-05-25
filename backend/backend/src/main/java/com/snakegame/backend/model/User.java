@@ -15,7 +15,6 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
-    // Getter và Setter cho username
     public String getUsername() {
         return username;
     }
@@ -24,7 +23,6 @@ public class User {
         this.username = username;
     }
 
-    // Getter và Setter cho password
     public String getPassword() {
         return password;
     }

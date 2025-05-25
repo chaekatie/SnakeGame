@@ -18,6 +18,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -28,15 +29,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private UserRepository userRepository;
 
+    //lọc bảo mật
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
         throws ServletException, IOException {
 
-        String path = request.getServletPath();
-        if (path.equals("/api/auth/login") || path.equals("/api/auth/register")) {
+        Set<String> publicPaths = Set.of(
+            "/api/auth/login",
+            "/api/auth/register",
+            "/forgot-password",
+            "/reset-password",
+            "/reset-password-form"
+        );
+        if (publicPaths.contains(request.getServletPath())) {
             filterChain.doFilter(request, response);
             return;
         }
+
+
 
         String authHeader = request.getHeader("Authorization");
 
