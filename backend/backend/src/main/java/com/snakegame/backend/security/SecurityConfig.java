@@ -25,7 +25,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // dùng JWT, không session
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/forgot-password", "/reset-password-form**", "/reset-password","/forgot-password","/reset-password-form").permitAll()
-                .requestMatchers("/api/scores/**").hasRole("USER") // chỉ người có ROLE_USER được phép
+                .requestMatchers("/api/scores/**", "/api/game/**").hasRole("USER")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
