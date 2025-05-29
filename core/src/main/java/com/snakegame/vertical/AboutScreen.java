@@ -159,7 +159,7 @@ public class AboutScreen implements Screen {
         stage.addActor(bubble1Logo);
 
         developerLabel = new Label("Team: Snakit Girls.\nAnh Thu, Ngoc Han and\n" +
-            " the mysterious sis.\n Github link: blabla.\nContact: abc@gmail.com", customLabel);
+            " the Sis.\n Github link: blabla.\nContact: abc@gmail.com", customLabel);
         developerLabel.setPosition(
             theBackground.getX() + 120,
             theBackground.getY() + 470

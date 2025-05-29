@@ -34,10 +34,10 @@ public class GameScreen implements Screen {
     private final int rows = 40;
     private final int cols = 40;
     private int cellSize = 48;
-    private Table boardTable, topBarTable;
+    private Table boardTable, topBarTable, snakeTable;
     private Texture foodTexture, cupTexture, pauseTexture;
     private Texture continueTexture, soundOnTexture, soundOffTexture;
-    private Image foodImage, cupImage;
+    private Image foodImage, cupImage, snakeImage;
     private ImageButton pauseButton, continueButton, soundOnButton, soundOffButton;
     private int hasSound;
 
@@ -148,6 +148,17 @@ public class GameScreen implements Screen {
         stage.addActor(boardTable);
         //endregion
 
+        //region Snake
+        Table theSnake = new Table();
+        TextureRegionDrawable snakeHead = new TextureRegionDrawable(new TextureRegion(new Texture("randoms\\snakehead.png")));
+        //TextureRegionDrawable snakeBody = new TextureRegionDrawable(new TextureRegion(new Texture("randoms\\snakebody.png")));
+        snakeImage = new Image(snakeHead);
+        snakeTable = new Table();
+        snakeTable.add(snakeImage).size(cellSize, cellSize);
+        snakeTable.row();
+        stage.addActor(snakeTable);
+
+        //ednregion
 
     }
     @Override

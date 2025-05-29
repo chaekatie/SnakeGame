@@ -129,7 +129,7 @@ public class FirstScreen implements Screen {
                         Actions.run(() -> anoymousButton.addAction(Actions.moveBy(500, 0, 0.5f)))
                     ),
                     Actions.run(() -> {
-                        game.setScreen(new SignInUpScreen(game, isLogin));
+                        game.setScreen(new MenuScreen(game));
                     })
                 ));
             }
