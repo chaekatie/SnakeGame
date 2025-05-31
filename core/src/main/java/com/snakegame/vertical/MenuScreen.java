@@ -19,9 +19,9 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class MenuScreen implements Screen {
-    private Texture mainBg;
+    private Texture mainBg, logout;
     private Image baseBg, avatarImage;
-    private ImageButton play, leader, prize, setting, about, backBtn, nextBtn;
+    private ImageButton play, leader, prize, setting, about, logoutBtn;
     private SnakeGame game;
     private Stage stage;
     private Viewport viewport;
@@ -194,28 +194,33 @@ public class MenuScreen implements Screen {
         });
         //endregion
 
-        //region Back, Next buttons
-        backBtn = game.activateBackButton(baseBg);
-        game.buttonAnimation(backBtn);
-        backBtn.addListener(new ClickListener() {
+        //region Logout buttons
+        logout = new Texture("buttons\\logout.png");
+        logoutBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(logout)));
+        game.buttonAnimation(logoutBtn);
+        logoutBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
                 game.setScreen(new FirstScreen(game));
             }
         });
-        stage.addActor(backBtn);
+        logoutBtn.setPosition(
+            baseBg.getX() + 580,
+            baseBg.getY()
+        );
+        stage.addActor(logoutBtn);
 
-        nextBtn = game.activateNextButton(baseBg);
-        game.buttonAnimation(nextBtn);
-        nextBtn.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
-                game.setScreen(new MenuScreen(game));
-            }
-        });
-        stage.addActor(nextBtn);
+//        nextBtn = game.activateNextButton(baseBg);
+//        game.buttonAnimation(nextBtn);
+//        nextBtn.addListener(new ClickListener() {
+//            @Override
+//            public void clicked(InputEvent event, float x, float y) {
+//                game.clicking.play(2f);
+//                game.setScreen(new MenuScreen(game));
+//            }
+//        });
+//        stage.addActor(nextBtn);
         //endregion
 
         //region Avatar Image

@@ -161,8 +161,8 @@ public class SnakeGame extends Game {
             ),
             Actions.forever(
                 Actions.sequence(
-                    Actions.color(Color.valueOf("a8d8ff"), 3f),
-                    Actions.color(Color.WHITE, 3f),
+//                    Actions.color(Color.valueOf("a8d8ff"), 3f),
+//                    Actions.color(Color.WHITE, 3f),
                     Actions.scaleTo(1.02f, 1.02f, 2f),
                     Actions.scaleTo(1.0f, 1.0f, 2f)
                 )
