@@ -8,6 +8,7 @@ import com.badlogic.gdx.net.HttpRequestBuilder;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
+import com.badlogic.gdx.Preferences;
 
 import java.util.function.Consumer;
 
@@ -15,6 +16,7 @@ public class GameApi {
 
     private static final String BASE_URL = "http://localhost:8080/api/game";
     private static final String BASE_URL_2 = "http://localhost:8080/api/auth";
+    private static final String AUTH_TOKEN_KEY = "auth_token";
 
     public interface GameStateCallback {
         void onSuccess(GameStateDTO gameState);
@@ -26,58 +28,169 @@ public class GameApi {
         void onError(String error);
     }
 
+    private static String getAuthToken() {
+        Preferences prefs = Gdx.app.getPreferences("SnakeGamePrefs");
+        return prefs.getString(AUTH_TOKEN_KEY, "");
+    }
+
+    private static void setAuthToken(String token) {
+        Preferences prefs = Gdx.app.getPreferences("SnakeGamePrefs");
+        prefs.putString(AUTH_TOKEN_KEY, token);
+        prefs.flush();
+    }
+
     public static void fetchGameState(GameStateCallback callback) {
+        String token = getAuthToken();
+        if (token.isEmpty()) {
+            callback.onError(new Exception("Not authenticated. Please login first."));
+            return;
+        }
+
         HttpRequestBuilder requestBuilder = new HttpRequestBuilder();
         HttpRequest request = requestBuilder.newRequest()
             .method("GET")
             .url(BASE_URL + "/state")
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
+            .header("Authorization", "Bearer " + token)
             .build();
+
+        Gdx.app.log("GameApi", "Sending request to: " + BASE_URL + "/state");
 
         Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
             @Override
             public void handleHttpResponse(HttpResponse httpResponse) {
                 try {
+                    int statusCode = httpResponse.getStatus().getStatusCode();
+                    Gdx.app.log("GameApi", "Response status code: " + statusCode);
+                    
+                    if (statusCode == 403) {
+                        callback.onError(new Exception("Authentication failed. Please login again."));
+                        return;
+                    }
+                    
+                    if (statusCode != 200) {
+                        String error = "Server returned status code: " + statusCode;
+                        Gdx.app.error("GameApi", error);
+                        callback.onError(new Exception(error));
+                        return;
+                    }
+
                     String json = httpResponse.getResultAsString();
-                    Json jsonParser = new Json();
-                    GameStateDTO gameState = jsonParser.fromJson(GameStateDTO.class, json);
+                    Gdx.app.log("GameApi", "Raw JSON response length: " + (json != null ? json.length() : 0));
+                    Gdx.app.log("GameApi", "Raw JSON response: " + json);
+                    
+                    if (json == null || json.trim().isEmpty()) {
+                        String error = "Empty response from server";
+                        Gdx.app.error("GameApi", error);
+                        callback.onError(new Exception(error));
+                        return;
+                    }
+
+                    // Parse JSON using JsonReader
+                    JsonReader jsonReader = new JsonReader();
+                    JsonValue root = jsonReader.parse(json);
+                    
+                    GameStateDTO gameState = new GameStateDTO();
+                    
+                    // Parse snake body
+                    JsonValue snakeBodyJson = root.get("snakeBody");
+                    if (snakeBodyJson != null) {
+                        gameState.snakeBody = new java.util.ArrayList<>();
+                        for (JsonValue pos : snakeBodyJson) {
+                            GameStateDTO.PositionDTO position = new GameStateDTO.PositionDTO();
+                            position.x = pos.getInt("x");
+                            position.y = pos.getInt("y");
+                            gameState.snakeBody.add(position);
+                        }
+                    }
+                    
+                    // Parse foods
+                    JsonValue foodsJson = root.get("foods");
+                    if (foodsJson != null) {
+                        gameState.foods = new java.util.ArrayList<>();
+                        for (JsonValue food : foodsJson) {
+                            GameStateDTO.FoodDTO foodDTO = new GameStateDTO.FoodDTO();
+                            JsonValue pos = food.get("position");
+                            foodDTO.position = new GameStateDTO.PositionDTO();
+                            foodDTO.position.x = pos.getInt("x");
+                            foodDTO.position.y = pos.getInt("y");
+                            foodDTO.type = GameStateDTO.FoodType.valueOf(food.getString("type"));
+                            foodDTO.points = food.getInt("points");
+                            gameState.foods.add(foodDTO);
+                        }
+                    }
+                    
+                    // Parse other fields
+                    gameState.score = root.getInt("score", 0);
+                    gameState.gameOver = root.getBoolean("gameOver", false);
+                    
+                    Gdx.app.log("GameApi", "Successfully parsed game state:");
+                    Gdx.app.log("GameApi", "- Snake size: " + gameState.snakeBody.size());
+                    Gdx.app.log("GameApi", "- Foods size: " + gameState.foods.size());
+                    Gdx.app.log("GameApi", "- Score: " + gameState.score);
+                    Gdx.app.log("GameApi", "- Game Over: " + gameState.gameOver);
+                    
                     callback.onSuccess(gameState);
                 } catch (Exception e) {
+                    Gdx.app.error("GameApi", "Error parsing game state: " + e.getMessage());
+                    e.printStackTrace();
                     callback.onError(e);
                 }
             }
 
             @Override
             public void failed(Throwable t) {
+                Gdx.app.error("GameApi", "HTTP request failed: " + t.getMessage());
+                t.printStackTrace();
                 callback.onError(t);
             }
 
             @Override
             public void cancelled() {
+                Gdx.app.error("GameApi", "Request cancelled");
                 callback.onError(new Exception("Request cancelled"));
             }
         });
     }
 
     public static void sendDirection(Direction direction) {
+        String token = getAuthToken();
+        if (token.isEmpty()) {
+            Gdx.app.error("GameApi", "Not authenticated. Please login first.");
+            return;
+        }
+
         HttpRequestBuilder requestBuilder = new HttpRequestBuilder();
         String directionJson = "\"" + direction.name() + "\"";
+        
+        Gdx.app.log("GameApi", "Sending direction: " + directionJson);
+        Gdx.app.log("GameApi", "Direction enum value: " + direction.name());
 
         HttpRequest request = requestBuilder.newRequest()
             .method("POST")
             .url(BASE_URL + "/direction")
             .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
             .content(directionJson) // Send as JSON
             .build();
+
+        Gdx.app.log("GameApi", "Request URL: " + request.getUrl());
+        Gdx.app.log("GameApi", "Request method: " + request.getMethod());
+        Gdx.app.log("GameApi", "Request headers: " + request.getHeaders());
+        Gdx.app.log("GameApi", "Request content: " + request.getContent());
 
         Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
             @Override
             public void handleHttpResponse(HttpResponse httpResponse) {
-                // Success
+                Gdx.app.log("GameApi", "Direction response status: " + httpResponse.getStatus().getStatusCode());
+                Gdx.app.log("GameApi", "Direction response: " + httpResponse.getResultAsString());
             }
 
             @Override
             public void failed(Throwable t) {
-                Gdx.app.log("GameApi", "Failed to send direction: " + t.getMessage());
+                Gdx.app.error("GameApi", "Failed to send direction: " + t.getMessage());
+                t.printStackTrace();
             }
 
             @Override
@@ -89,22 +202,50 @@ public class GameApi {
 
     // Add update and reset methods
     public static void updateGame(GameStateCallback callback) {
+        String token = getAuthToken();
+        if (token.isEmpty()) {
+            callback.onError(new Exception("Not authenticated. Please login first."));
+            return;
+        }
+
         HttpRequest request = new HttpRequestBuilder().newRequest()
             .method("POST")
             .url(BASE_URL + "/update")
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
             .build();
+
+        Gdx.app.log("GameApi", "Sending update request to: " + BASE_URL + "/update");
 
         Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
             @Override
             public void handleHttpResponse(HttpResponse httpResponse) {
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                Gdx.app.log("GameApi", "Update response status code: " + statusCode);
+                
+                if (statusCode == 403) {
+                    callback.onError(new Exception("Authentication failed. Please login again."));
+                    return;
+                }
+                
+                if (statusCode != 200) {
+                    String error = "Update failed with status code: " + statusCode;
+                    Gdx.app.error("GameApi", error);
+                    callback.onError(new Exception(error));
+                    return;
+                }
+                
                 fetchGameState(callback);
             }
             @Override
             public void failed(Throwable t) {
+                Gdx.app.error("GameApi", "Update request failed: " + t.getMessage());
+                t.printStackTrace();
                 callback.onError(t);
             }
             @Override
             public void cancelled() {
+                Gdx.app.error("GameApi", "Update request cancelled");
                 callback.onError(new Exception("Update cancelled"));
             }
         });
@@ -156,7 +297,8 @@ public class GameApi {
                 System.out.println("Raw response: " + response);
 
                 if (status == 200) {
-                    // JWT tokens start with 'ey...'
+                    // Store the token
+                    setAuthToken(response);
                     callback.onSuccess(response);
                 } else {
                     callback.onError("Login failed: " + response);
@@ -172,8 +314,6 @@ public class GameApi {
                 callback.onError("Request was cancelled");
             }
         });
-
-
     }
 
     public static void register(String username, String password, String email, LoginCallback callback){

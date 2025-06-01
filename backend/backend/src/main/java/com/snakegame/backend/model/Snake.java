@@ -71,10 +71,10 @@ public class Snake {
 
         switch (direction) {
             case UP:
-                y--;
+                y++;
                 break;
             case DOWN:
-                y++;
+                y--;
                 break;
             case LEFT:
                 x--;

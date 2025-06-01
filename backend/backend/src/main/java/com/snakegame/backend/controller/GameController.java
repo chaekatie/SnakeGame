@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 public class GameController {
     private final GameService gameService;
 
-    @Autowired
     public GameController(GameService gameService) {
         this.gameService = gameService;
     }
