@@ -1,6 +1,7 @@
 package com.snakegame.backend.controller;
 
 import com.snakegame.backend.model.Score;
+import com.snakegame.backend.model.UserHighScore;
 import com.snakegame.backend.repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -34,8 +35,9 @@ public class ScoreController {
     // Lấy tất cả điểm
     @GetMapping("/all")
     public List<Score> getAllScores() {
-        return scoreRepository.findAll();
+        return scoreRepository.findAllByOrderByScoreDesc();
     }
+
 
     // Lấy điểm người dùng hiện tại
     @GetMapping("/my")
@@ -51,4 +53,10 @@ public class ScoreController {
     public List<Score> getTop10Scores() {
         return scoreRepository.findTop10ByOrderByScoreDesc();
     }
+
+    @GetMapping("/highscores")
+    public List<UserHighScore> getHighScores() {
+        return scoreRepository.findHighScoresGroupByUser();
+    }
+
 }
