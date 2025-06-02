@@ -23,13 +23,13 @@ public class SignInScreen implements Screen {
     private Viewport viewport;
     private Stage stage;
     private Texture mainBg, forgotPassLogo, signupTex, dialogTex;
-    private Image baseBg, dialogBg;
+    private Image baseBg;
     private boolean loginSuccessful;
     private Skin skin;
     private TextField username, password;
     private TextButton loginButton;
     private ImageButton backBtn, signupBtn, forgotPassBtn;
-    private Dialog successDialog, warningDialog, resetPassDialog;
+    private Dialog successDialog, warningDialog;
 
     public SignInScreen(SnakeGame game){
         this.game = game;
@@ -224,14 +224,18 @@ public class SignInScreen implements Screen {
         });
         signupBtn.setPosition(
             baseBg.getX() + 460,
-            baseBg.getY() - 50
+            baseBg.getY() + 40
         );
         stage.addActor(signupBtn);
         //endregion
 
         //region Forgot password Logo
-        forgotPassLogo = new Texture("logos\\forgotpass.png");
-        forgotPassBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(forgotPassLogo)));
+        forgotPassLogo = new Texture("logos//forgotpass.png");
+        TextureRegion region = new TextureRegion(forgotPassLogo);
+        TextureRegionDrawable drawable = new TextureRegionDrawable(region);
+        forgotPassBtn = new ImageButton(drawable);
+        forgotPassBtn.setSize(region.getRegionWidth(), region.getRegionHeight());
+
         forgotPassBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -241,12 +245,10 @@ public class SignInScreen implements Screen {
         });
         forgotPassBtn.setPosition(
             baseBg.getX() + 450,
-            baseBg.getY() + 80
+            baseBg.getY() + 180
         );
         stage.addActor(forgotPassBtn);
         //endregion
-
-        stage.setDebugAll(true);
     }
 
     public void dialogTextAnimation(Label text, boolean before){
@@ -298,5 +300,6 @@ public class SignInScreen implements Screen {
         stage.dispose();
         mainBg.dispose();
         forgotPassLogo.dispose();
+        signupTex.dispose();
     }
 }
