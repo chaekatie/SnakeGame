@@ -56,6 +56,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 Claims claims = jwtUtil.extractAllClaims(token); //  Lấy toàn bộ claims
+
                 String role = claims.get("role", String.class);  //  Lấy role từ token
 
                 UserDetails userDetails = new org.springframework.security.core.userdetails.User(

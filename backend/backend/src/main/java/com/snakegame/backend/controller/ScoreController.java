@@ -31,11 +31,12 @@ public class ScoreController {
         return ResponseEntity.ok("Score saved");
     }
 
-    // Lấy tất cả điểm
+    // Lấy tất cả điểm theo thứ tự cao xuống thấp
     @GetMapping("/all")
     public List<Score> getAllScores() {
-        return scoreRepository.findAll();
+        return scoreRepository.findAllByOrderByScoreDesc();
     }
+
 
     // Lấy điểm người dùng hiện tại
     @GetMapping("/my")
