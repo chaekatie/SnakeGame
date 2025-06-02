@@ -29,6 +29,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.utils.Align;
 import java.util.List;
+import java.util.ArrayList;
 
 public class GameScreen implements Screen {
     private final SnakeGame game;
@@ -39,7 +40,7 @@ public class GameScreen implements Screen {
     private SpriteBatch batch;
     private final int rows = 20;
     private final int cols = 20;
-    private int cellSize = 48;
+    private int cellSize = 32;
     private Table boardTable, topBarTable;
     private Texture foodTexture, cupTexture, pauseTexture;
     private Texture continueTexture, soundOnTexture, soundOffTexture;
@@ -61,9 +62,14 @@ public class GameScreen implements Screen {
         OrthographicCamera camera = new OrthographicCamera();
         gridTile = new Texture("backgrounds\\gridtile1.png");
         batch = new SpriteBatch();
-        viewport = new FitViewport(game.V_WIDTH,game.V_HEIGHT, camera);
+        viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, batch);
-        Gdx.input.setInputProcessor(stage);
+        
+        // Initialize with empty game state
+        currentGameState = new GameStateDTO();
+        currentGameState.snakeBody = new ArrayList<>();
+        currentGameState.foods = new ArrayList<>();
+        currentGameState.score = 0;
 
         backgroundTexture = new Texture("backgrounds\\bgempty.png");
         TextureRegionDrawable background = new TextureRegionDrawable(new TextureRegion(backgroundTexture));
@@ -149,25 +155,32 @@ public class GameScreen implements Screen {
         TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture("backgrounds\\gridtile2.png")));
 
         boardTable = new Table();
+        
+        // Calculate the total board size
+        float totalBoardWidth = cols * cellSize;
+        float totalBoardHeight = rows * cellSize;
+        
+        // Center the board on screen
+        float boardX = (game.V_WIDTH - totalBoardWidth) / 2f;
+        float boardY = (game.V_HEIGHT - totalBoardHeight) / 2f;
+        
+        boardTable.setPosition(boardX, boardY);
 
         for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col += 2) {
-                if (row %2 == 0){
-                    Image cell1 = new Image(cell_1);
-                    Image cell2 = new Image(cell_2);
-                    boardTable.add(cell1).size(cellSize, cellSize).pad(0);
-                    boardTable.add(cell2).size(cellSize, cellSize).pad(0);
-                }
-                else
-                {
-                    Image cell1 = new Image(cell_1);
-                    Image cell2 = new Image(cell_2);
-                    boardTable.add(cell2).size(cellSize, cellSize).pad(0);
-                    boardTable.add(cell1).size(cellSize, cellSize).pad(0);
-                }
+            for (int col = 0; col < cols; col++) {
+                Image cell = new Image((row + col) % 2 == 0 ? cell_1 : cell_2);
+                boardTable.add(cell).size(cellSize, cellSize);
             }
             boardTable.row();
         }
+        
+        boardTable.pack();
+        
+        boardTable.setPosition(
+        		boardX,
+        		boardY
+        	);
+        
         stage.addActor(boardTable);
         //endregion
         
@@ -181,18 +194,20 @@ public class GameScreen implements Screen {
 
         // Initial game state fetch
         fetchGameState();
-        
-        // Add keyboard listener
-        Gdx.input.setInputProcessor(stage);
-
     }
     
     private void fetchGameState() {
         GameApi.fetchGameState(new GameApi.GameStateCallback() {
             @Override
             public void onSuccess(GameStateDTO gameState) {
+                if (gameState == null) {
+                    Gdx.app.error("GameScreen", "fetchGameState: Received null gameState from backend!");
+                    return;
+                }
                 currentGameState = gameState;
                 updateScoreLabel();
+                Gdx.app.log("GameScreen", "Game state fetched successfully. Snake size: " + 
+                    (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
             }
             @Override
             public void onError(Throwable t) {
@@ -238,31 +253,59 @@ public class GameScreen implements Screen {
         GameApi.updateGame(new GameApi.GameStateCallback() {
             @Override
             public void onSuccess(GameStateDTO gameState) {
+                if (gameState == null) {
+                    Gdx.app.error("GameScreen", "updateGame: Received null gameState from backend!");
+                    return;
+                }
                 currentGameState = gameState;
                 updateScoreLabel();
+                Gdx.app.log("GameScreen", "Game updated successfully:");
+                Gdx.app.log("GameScreen", "- Snake size: " + 
+                    (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
+                if (gameState.snakeBody != null && !gameState.snakeBody.isEmpty()) {
+                    GameStateDTO.PositionDTO head = gameState.snakeBody.get(0);
+                    Gdx.app.log("GameScreen", "- Snake head position: (" + head.x + ", " + head.y + ")");
+                }
+                Gdx.app.log("GameScreen", "- Score: " + gameState.score);
+                Gdx.app.log("GameScreen", "- Game Over: " + gameState.gameOver);
             }
             @Override
             public void onError(Throwable t) {
                 Gdx.app.error("GameScreen", "Error updating game", t);
+                t.printStackTrace();
             }
         });
     }
     
     private void handleInput() {
-    	if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+        // Remove stage input processor temporarily to allow keyboard input
+        Gdx.input.setInputProcessor(null);
+        
+        if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+            Gdx.app.log("GameScreen", "UP key pressed - sending direction UP");
             GameApi.sendDirection(Direction.UP);
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+            Gdx.app.log("GameScreen", "DOWN key pressed - sending direction DOWN");
             GameApi.sendDirection(Direction.DOWN);
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
+            Gdx.app.log("GameScreen", "LEFT key pressed - sending direction LEFT");
             GameApi.sendDirection(Direction.LEFT);
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
+            Gdx.app.log("GameScreen", "RIGHT key pressed - sending direction RIGHT");
             GameApi.sendDirection(Direction.RIGHT);
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            Gdx.app.log("GameScreen", "R key pressed - resetting game");
             GameApi.resetGame(new GameApi.GameStateCallback() {
                 @Override
                 public void onSuccess(GameStateDTO gameState) {
+                    if (gameState == null) {
+                        Gdx.app.error("GameScreen", "resetGame: Received null gameState from backend!");
+                        return;
+                    }
                     currentGameState = gameState;
                     updateScoreLabel();
+                    Gdx.app.log("GameScreen", "Game reset successful. New snake size: " + 
+                        (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
                 }
                 @Override
                 public void onError(Throwable t) {
@@ -270,38 +313,54 @@ public class GameScreen implements Screen {
                 }
             });
         }
+        
+        // Restore stage input processor for UI elements
+        Gdx.input.setInputProcessor(stage);
     }
 
     
     private void drawGameObjects() {
-        if (currentGameState == null) return;
-
+        if (currentGameState == null) {
+            Gdx.app.log("GameScreen", "Current game state is null");
+            return;
+        }
+        
+        // Get board's position
+        float boardX = boardTable.getX();
+        float boardY = boardTable.getY();
+        
         // Set batch projection to match stage
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
         
         // Draw snake
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
-        for (int i = 0; i < snakeBody.size(); i++) {
-            GameStateDTO.PositionDTO segment = snakeBody.get(i);
-            Texture texture = (i == 0) ? snakeHeadTexture : snakeBodyTexture;
-            
-            // Calculate screen position (centered grid)
-            float x = boardTable.getX() + segment.x * cellSize;
-            float y = boardTable.getY() + segment.y * cellSize;
-            
-            batch.draw(texture, x, y, cellSize, cellSize);
+        if (snakeBody != null) {
+            Gdx.app.log("GameScreen", "Drawing snake with " + snakeBody.size() + " segments");
+            for (int i = 0; i < snakeBody.size(); i++) {
+                GameStateDTO.PositionDTO segment = snakeBody.get(i);
+                
+                // Calculate screen position (centered grid)
+                float x = boardX + segment.x * cellSize;
+                float y = boardY + segment.y * cellSize;
+                
+                Texture texture = (i == 0) ? snakeHeadTexture : snakeBodyTexture;
+                batch.draw(texture, x, y, cellSize, cellSize);
+            }
         }
         
         // Draw food
-        for (GameStateDTO.FoodDTO food : currentGameState.foods) {
-            Texture texture = getFoodTexture(food.type);
-            
-            // Calculate screen position (centered grid)
-            float x = boardTable.getX() + food.position.x * cellSize;
-            float y = boardTable.getY() + food.position.y * cellSize;
-            
-            batch.draw(texture, x, y, cellSize, cellSize);
+        if (currentGameState.foods != null) {
+            Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
+            for (GameStateDTO.FoodDTO food : currentGameState.foods) {
+                Texture texture = getFoodTexture(food.type);
+                
+                // Calculate screen position (centered grid)
+                float x = boardTable.getX() + food.position.x * cellSize;
+                float y = boardTable.getY() + food.position.y * cellSize;
+                
+                batch.draw(texture, x, y, cellSize, cellSize);
+            }
         }
         
         batch.end();
