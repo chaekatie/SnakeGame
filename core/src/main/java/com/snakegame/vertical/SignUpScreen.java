@@ -154,10 +154,27 @@ public class SignUpScreen implements Screen {
                 System.out.println("Sign up button clicked!");
                 game.clicking.play(2f);
 
-                String user = username.getText();
-                String pass = password.getText();
-                String Email = email.getText();
+                String user = username.getText().trim();
+                String pass = password.getText().trim();
+                String Email = email.getText().trim();
                 System.out.println("Username: " + user + ", Password: " + pass + ", Email: " + Email);
+
+                if (user.isEmpty() || pass.isEmpty() || Email.isEmpty()) {
+                    signupSuccessful = false;
+                    Gdx.app.postRunnable(() -> {
+                        warningMessage.setText("All fields are required.");
+                        dialogTextAnimation(warningMessage, false);
+                        dialogTextAnimation(warningMessage2, false);
+                        warningDialog.show(stage);
+                        Timer.schedule(new Timer.Task() {
+                            @Override
+                            public void run() {
+                                warningDialog.hide();
+                            }
+                        }, 1f);
+                    });
+                    return;
+                }
 
                 GameApi.register(user, pass, Email, new GameApi.LoginCallback() {
                     @Override
@@ -165,6 +182,7 @@ public class SignUpScreen implements Screen {
                         signupSuccessful = true;
                         successDialog.show(stage);
                         System.out.println(token);
+
                         Gdx.app.postRunnable(() -> {
                             dialogTextAnimation(successMessage, false);
                             dialogTextAnimation(moveMessage, false);
@@ -180,18 +198,17 @@ public class SignUpScreen implements Screen {
 
                     @Override
                     public void onError(String error) {
-                        System.out.println(error);
+                        System.out.println("ERROR: " + error);
                         signupSuccessful = false;
+
                         Gdx.app.postRunnable(() -> {
                             warningMessage.setText(error);
                             dialogTextAnimation(warningMessage, false);
                             dialogTextAnimation(warningMessage2, false);
-                            successDialog.hide();
                             warningDialog.show(stage);
                             Timer.schedule(new Timer.Task() {
                                 @Override
                                 public void run() {
-                                    successDialog.hide();
                                     warningDialog.hide();
                                 }
                             }, 1f);
@@ -200,6 +217,7 @@ public class SignUpScreen implements Screen {
                 });
             }
         });
+
 
         signupButton.addAction(
             Actions.sequence(
@@ -233,6 +251,8 @@ public class SignUpScreen implements Screen {
 //        });
 //        stage.addActor(nextBtn);
         //endregion
+
+        stage.setDebugAll(true);
     }
 
     public void dialogTextAnimation(Label text, boolean before){

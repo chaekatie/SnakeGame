@@ -33,7 +33,7 @@ public class PasswordResetService {
     @Transactional
     public void sendResetLink(String email) {
         User user = userRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Không tìm thấy email"));
+            .orElseThrow(() -> new RuntimeException("Email not found."));
 
         // Xoá token cũ nếu tồn tại
         tokenRepository.deleteByUser(user);
@@ -60,10 +60,10 @@ public class PasswordResetService {
     @Transactional
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-            .orElseThrow(() -> new RuntimeException("Token không hợp lệ"));
+            .orElseThrow(() -> new RuntimeException("Invalid Token."));
 
         if (resetToken.getExpirationTime().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token đã hết hạn");
+            throw new RuntimeException("Token expired.");
         }
 
         User user = resetToken.getUser();

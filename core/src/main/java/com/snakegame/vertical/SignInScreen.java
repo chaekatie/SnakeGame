@@ -23,13 +23,13 @@ public class SignInScreen implements Screen {
     private Viewport viewport;
     private Stage stage;
     private Texture mainBg, forgotPassLogo, signupTex, dialogTex;
-    private Image baseBg, forgotPassword, dialogBg;
+    private Image baseBg, dialogBg;
     private boolean loginSuccessful;
     private Skin skin;
     private TextField username, password;
     private TextButton loginButton;
-    private ImageButton backBtn, signupBtn;
-    private Dialog successDialog, warningDialog;
+    private ImageButton backBtn, signupBtn, forgotPassBtn;
+    private Dialog successDialog, warningDialog, resetPassDialog;
 
     public SignInScreen(SnakeGame game){
         this.game = game;
@@ -48,6 +48,18 @@ public class SignInScreen implements Screen {
         Label.LabelStyle customLabel = new Label.LabelStyle();
         customLabel.font = game.theSmallFont;
         customLabel.fontColor = Color.BLACK;
+
+        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
+        buttonStyle.font = font;
+        buttonStyle.up = null;
+        buttonStyle.down = null;
+        buttonStyle.fontColor = Color.BLACK;
+
+        TextField.TextFieldStyle textFieldStyle = new TextField.TextFieldStyle();
+        textFieldStyle.font = font;
+        textFieldStyle.fontColor = Color.valueOf("D2691E");
+        textFieldStyle.background = null;
+        textFieldStyle.cursor = skin.getDrawable("cursor");
 
         dialogTex = new Texture("backgrounds\\table.png");
         TextureRegionDrawable dialog = new TextureRegionDrawable(new TextureRegion(dialogTex));
@@ -83,36 +95,7 @@ public class SignInScreen implements Screen {
         stage.addActor(baseBg);
         //endregion
 
-        //region Forgot password Logo
-        forgotPassLogo = new Texture("logos\\forgotpass.png");
-        forgotPassword = new Image(new TextureRegionDrawable(new TextureRegion(forgotPassLogo)));
-        forgotPassword.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
-                game.setScreen(new MenuScreen(game));
-            }
-        });
-        forgotPassword.setPosition(
-            baseBg.getX() + 450,
-            baseBg.getY() + 80
-        );
-        stage.addActor(forgotPassword);
-        //endregion
-
         //region Textboxes
-        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
-        buttonStyle.font = font;
-        buttonStyle.up = null;
-        buttonStyle.down = null;
-        buttonStyle.fontColor = Color.BLACK;
-
-        TextField.TextFieldStyle textFieldStyle = new TextField.TextFieldStyle();
-        textFieldStyle.font = font;
-        textFieldStyle.fontColor = Color.valueOf("D2691E");
-        textFieldStyle.background = null;
-        textFieldStyle.cursor = skin.getDrawable("cursor");
-
         username = new TextField("", textFieldStyle);
         password = new TextField("", textFieldStyle);
         password.setPasswordMode(true);
@@ -148,8 +131,8 @@ public class SignInScreen implements Screen {
         //endregion
 
         //region Login Button
-        loginButton = new TextButton("LOGIN", buttonStyle);
-        loginButton.setSize(game.V_WIDTH/10, game.V_HEIGHT/14);
+        loginButton = new TextButton("", buttonStyle);
+        loginButton.setSize(250, 90);
         loginButton.setPosition(
             baseBg.getX() + 240,
             baseBg.getY() + 380
@@ -246,6 +229,24 @@ public class SignInScreen implements Screen {
         stage.addActor(signupBtn);
         //endregion
 
+        //region Forgot password Logo
+        forgotPassLogo = new Texture("logos\\forgotpass.png");
+        forgotPassBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(forgotPassLogo)));
+        forgotPassBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.clicking.play(2f);
+                game.setScreen(new ResetPasswordScreen(game, false));
+            }
+        });
+        forgotPassBtn.setPosition(
+            baseBg.getX() + 450,
+            baseBg.getY() + 80
+        );
+        stage.addActor(forgotPassBtn);
+        //endregion
+
+        stage.setDebugAll(true);
     }
 
     public void dialogTextAnimation(Label text, boolean before){

@@ -15,24 +15,23 @@ public class PasswordResetController {
     public ResponseEntity<String> forgotPassword(@RequestParam String email) {
         try {
             passwordResetService.sendResetLink(email);
-            return ResponseEntity.ok("Link đặt lại mật khẩu đã được gửi đến email của bạn.");
+            return ResponseEntity.ok("Reset link has been sent");
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.badRequest().body("Lỗi: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
-
 
     @PostMapping("/reset-password")
     public ResponseEntity<String> resetPassword(@RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
-        return ResponseEntity.ok("Mật khẩu đã được cập nhật thành công.");
+        return ResponseEntity.ok("Password changes successfully");
     }
 
     @GetMapping("/reset-password-form")
     @ResponseBody
     public String showResetForm(@RequestParam("token") String token) {
-        return "Đã nhận được token: " + token;
+        return "Token received: " + token;
     }
 
 }
