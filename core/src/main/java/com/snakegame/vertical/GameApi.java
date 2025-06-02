@@ -5,6 +5,7 @@ import com.badlogic.gdx.Net.HttpResponse;
 import com.badlogic.gdx.Net.HttpResponseListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.net.HttpRequestBuilder;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.utils.JsonReader;
 import com.badlogic.gdx.utils.JsonValue;
@@ -15,6 +16,7 @@ public class GameApi {
 
     private static final String BASE_URL = "http://localhost:8080/api/game";
     private static final String BASE_URL_2 = "http://localhost:8080/api/auth";
+    private static final String BASE_URL_3 = "http://localhost:8080/api/scores";
 
     public interface GameStateCallback {
         void onSuccess(GameStateDTO gameState);
@@ -23,6 +25,11 @@ public class GameApi {
 
     public interface LoginCallback {
         void onSuccess(String token);
+        void onError(String error);
+    }
+
+    public interface LeaderboardCallback {
+        void onSuccess(Array<ScoreDTO> scores);
         void onError(String error);
     }
 
@@ -206,6 +213,38 @@ public class GameApi {
             @Override
             public void cancelled() {
                 callback.onError("Request cancelled");
+            }
+        });
+    }
+
+    public static void leaderboard(LeaderboardCallback callback){
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("GET")
+            .url(BASE_URL_3 + "/all")
+            .build();
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                String json = httpResponse.getResultAsString();
+                Json jsonParser = new Json();
+                try {
+                    Array<ScoreDTO> scores = jsonParser.fromJson(Array.class, ScoreDTO.class, json);
+                    callback.onSuccess(scores);
+                } catch (Exception e) {
+                    callback.onError("Failed to parse leaderboard.");
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                callback.onError("Leaderboard request failed: " + t.getMessage());
+            }
+
+            @Override
+            public void cancelled() {
+                callback.onError("Leaderboard request was cancelled.");
             }
         });
     }
