@@ -38,13 +38,19 @@ public class FirstScreen implements Screen {
         skin = new Skin(Gdx.files.internal("uiskin.json"));
         Gdx.input.setInputProcessor(stage);
 
+        Label.LabelStyle customLabel = new Label.LabelStyle();
+        customLabel.font = game.theSmallFont;
+        customLabel.fontColor = Color.BLACK;
+
         //game.backgroundMusic.play();
         //game.snakeHiss.play();
 
+        //region Background
         backgroundTexture = new Texture("backgrounds\\mainbg.png");
         background = new Image(backgroundTexture);
         game.appearTransition(background);
         stage.addActor(background);
+        //endregion
 
         //region Buttons
         loginTexture = new Texture("buttons\\login.png");
@@ -114,26 +120,8 @@ public class FirstScreen implements Screen {
         //endregion
 
         //region Warning Dialog
-
-        Label.LabelStyle customLabel = new Label.LabelStyle();
-        customLabel.font = game.theSmallFont;
-        customLabel.fontColor = Color.BLACK;
-
         dialogTexture = new Texture("backgrounds\\table.png");
         TextureRegionDrawable dialog = new TextureRegionDrawable(new TextureRegion(dialogTexture));
-//        warningDialog = new Dialog("", skin);
-//        warningDialog.getContentTable().setBackground(dialog);
-//
-//        Table content = warningDialog.getContentTable();
-//        Label message1 = new Label("No signing in means your data won't be save!",customLabel);
-//        Label message2 = new Label("Close this and choose to login if you want.", customLabel);
-//        Label message3 = new Label("Or continue then sign up later.", customLabel);
-//        dialogTextAnimation(message1, true);
-//        dialogTextAnimation(message2, true);
-//        dialogTextAnimation(message3, true);
-//        content.add(message1).center().row();
-//        content.add(message2).center().row();
-//        content.add(message3).center().row();
 
         warningDialog = new Dialog("", skin) {
             @Override
@@ -141,6 +129,7 @@ public class FirstScreen implements Screen {
                 if (Boolean.TRUE.equals(obj)) {
                     System.out.println("User chose to stay anonymously");
                     warningDialog.hide();
+                    GameApi.clearAuthToken();
 
                     background.addAction(Actions.sequence(
                         Actions.parallel(

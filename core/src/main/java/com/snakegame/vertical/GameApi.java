@@ -19,7 +19,7 @@ public class GameApi {
 
     private static final String BASE_URL = "http://localhost:8080/api/game";
     private static final String BASE_URL_2 = "http://localhost:8080/api/auth";
-    //private static final String BASE_URL_3 = "http://localhost:8080/api/scores";
+    private static final String BASE_URL_3 = "http://localhost:8080/api/scores";
     private static final String AUTH_TOKEN_KEY = "auth_token";
 
     public interface GameStateCallback {
@@ -37,10 +37,15 @@ public class GameApi {
         void onError(String error);
     }
 
-//    public interface LeaderboardCallback {
-//        void onSuccess(Array<ScoreDTO> scores);
-//        void onError(String error);
-//    }
+    public interface UserHighScoreCallback {
+        void onSuccess(UserHighScoreDTO[] scores);
+        void onError(Throwable error);
+    }
+
+    public interface MyScoreCallback {
+        void onSuccess(ScoreDTO[] myScores);
+        void onError(Throwable error);
+    }
 
     private static String getAuthToken() {
         Preferences prefs = Gdx.app.getPreferences("SnakeGamePrefs");
@@ -50,6 +55,12 @@ public class GameApi {
     private static void setAuthToken(String token) {
         Preferences prefs = Gdx.app.getPreferences("SnakeGamePrefs");
         prefs.putString(AUTH_TOKEN_KEY, token);
+        prefs.flush();
+    }
+
+    public static void clearAuthToken(){
+        Preferences prefs = Gdx.app.getPreferences("SnakeGamePrefs");
+        prefs.remove(AUTH_TOKEN_KEY);
         prefs.flush();
     }
 
@@ -311,7 +322,7 @@ public class GameApi {
                 System.out.println("Raw response: " + response);
 
                 if (status == 200) {
-                    // JWT tokens start with 'ey...'
+                    setAuthToken(response);
                     callback.onSuccess(response);
                 } else {
                     callback.onError("Login failed: " + response);
@@ -442,35 +453,92 @@ public class GameApi {
             }
         });
     }
-//    public static void leaderboard(LeaderboardCallback callback){
-//        HttpRequestBuilder builder = new HttpRequestBuilder();
-//        HttpRequest request = builder.newRequest()
-//            .method("GET")
-//            .url(BASE_URL_3 + "/all")
-//            .build();
-//
-//        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
-//            @Override
-//            public void handleHttpResponse(HttpResponse httpResponse) {
-//                String json = httpResponse.getResultAsString();
-//                Json jsonParser = new Json();
-//                try {
-//                    Array<ScoreDTO> scores = jsonParser.fromJson(Array.class, ScoreDTO.class, json);
-//                    callback.onSuccess(scores);
-//                } catch (Exception e) {
-//                    callback.onError("Failed to parse leaderboard.");
-//                }
-//            }
-//
-//            @Override
-//            public void failed(Throwable t) {
-//                callback.onError("Leaderboard request failed: " + t.getMessage());
-//            }
-//
-//            @Override
-//            public void cancelled() {
-//                callback.onError("Leaderboard request was cancelled.");
-//            }
-//        });
-//    }
+
+    public static void getUserHighScores(final UserHighScoreCallback callback){
+        String token = getAuthToken();
+        System.out.println("TOKEN: " + token);
+        if (token.isEmpty()) {
+            System.out.println("GameApi" + "Not authenticated. Please login first.");
+            return;
+        }
+
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("GET")
+            .url(BASE_URL_3 + "/highscores")
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                String json = httpResponse.getResultAsString();
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                System.out.println("STATUS CODE: " + statusCode);
+                System.out.println("JSON RESPONSE: " + json);
+
+                try {
+                    UserHighScoreDTO[] scores = new Json().fromJson(UserHighScoreDTO[].class, json);
+                    Gdx.app.postRunnable(() -> callback.onSuccess(scores));
+                } catch (Exception e) {
+                    Gdx.app.postRunnable(() -> callback.onError(e));
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError(t));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError(new Exception("Request cancelled")));
+            }
+        });
+    }
+
+    public static void getUserScores(final MyScoreCallback callback){
+        String token = getAuthToken();
+        System.out.println("TOKEN: " + token);
+        if (token.isEmpty()) {
+            System.out.println("GameApi" + "Not authenticated. Please login first.");
+            return;
+        }
+
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("GET")
+            .url(BASE_URL_3 + "/my")
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                try {
+                    String json = httpResponse.getResultAsString();
+                    int statusCode = httpResponse.getStatus().getStatusCode();
+                    System.out.println("STATUS CODE: " + statusCode);
+                    System.out.println("JSON RESPONSE: " + json);
+                    ScoreDTO[] myScores = new Json().fromJson(ScoreDTO[].class, json);
+                    Gdx.app.postRunnable(() -> callback.onSuccess(myScores));
+                } catch (Exception e) {
+                    Gdx.app.postRunnable(() -> callback.onError(e));
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError(t));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError(new Exception("Request cancelled")));
+            }
+        });
+
+    }
 }

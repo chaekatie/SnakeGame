@@ -12,10 +12,12 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -29,6 +31,7 @@ public class LeaderScreen implements Screen {
     private BitmapFont myFont;
     private Label.LabelStyle customLabel;
     private Skin skin;
+    private Table rowsTable;
 
     public LeaderScreen(SnakeGame game){
         this.game = game;
@@ -37,96 +40,35 @@ public class LeaderScreen implements Screen {
         stage = new Stage(viewport, game.batch);
         Gdx.input.setInputProcessor(stage);
         skin = new Skin(Gdx.files.internal("uiskin.json"));
-//        OrthographicCamera camera = new OrthographicCamera();
-//        viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
-//        stage = new Stage(viewport, game.batch);
-//        Gdx.input.setInputProcessor(stage);
-//
-//        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("chilanka.ttf"));
-//        FreeTypeFontGenerator.FreeTypeFontParameter param = new FreeTypeFontGenerator.FreeTypeFontParameter();
-//        param.size = 24;
-//        param.color = Color.WHITE;
-//        myFont = generator.generateFont(param);
-//        generator.dispose();
-//        customLabel.font = myFont;
-//
-//        //background = new Texture("backgrounds\\bgmenu.png");
-//        background = new Texture("backgrounds\\background.jpg");
-//        TextureRegionDrawable backgroundDrawable = new TextureRegionDrawable(new TextureRegion(background));
-//        backgroundImage = new Image(backgroundDrawable);
-//        game.appearTransition(backgroundImage);
-//        stage.addActor(backgroundImage);
-//
-//        backButton = game.activateBackButton(backgroundImage);
-//        game.buttonAnimation(backButton);
-//        backButton.addListener(new ClickListener() {
-//            @Override
-//            public void clicked(InputEvent event, float x, float y) {
-//                game.clicking.play(2f);
-//                game.setScreen(new MenuScreen(game));
-//            }
-//        });
-//        stage.addActor(backButton);
-//
-//        board = new Texture("backgrounds\\bgempty.png");
-//        TextureRegionDrawable boardTexture = new TextureRegionDrawable(new TextureRegion(board));
-//        boardImage = new Image(boardTexture);
-//        game.imageAnimation(boardImage);
-//
-//        Table rowsTable = new Table();
-//        rowsTable.top().padTop(60);
-//        // Example data
-//        for (int i = 0; i < 8; i++) {
-//            rowsTable.row();
-//            rowsTable.add(createPlayerRow(i + 1, "USERNAME0" + (i + 1), (int)(Math.random() * 40000), new Texture("avatar.png")))
-//                .width(280).height(50).padBottom(8);
-//        }
-//
-//        Stack boardStack = new Stack();
-//        boardStack.add(boardImage);
-//        boardStack.setSize(boardImage.getPrefWidth(), boardImage.getPrefHeight());
-//        boardStack.add(rowsTable);
-        //boardStack.add(leaderLogo);
-        //.pad(top, left, bottom, right)
-//        Table table = new Table();
-//        table.setFillParent(true); // so it resizes with screen
-//        stage.addActor(table);
-//        table.add(boardStack).pad(10, 10, 10, 5);
-//
-//        leader = new Texture("logos\\leaderboardicon.png");
-//        TextureRegionDrawable leaderlogo = new TextureRegionDrawable(new TextureRegion(leader));
-//        leaderLogo = new Image(leaderlogo);
-//        game.imageAnimation(leaderLogo);
-//        leaderLogo.setPosition(
-//            backgroundImage.getX() + 110,
-//            backgroundImage.getY() + 700
-//        );
-//        stage.addActor(leaderLogo);
 
-//        board = new Texture("backgrounds\\bgempty.png");
-//        TextureRegionDrawable boardDrawable = new TextureRegionDrawable(new TextureRegion(board));
-//        boardImage = new Image(boardDrawable);
-//        game.imageAnimation(boardImage);
-//        stage.addActor(boardImage);
-
-    }
-
-    @Override
-    public void show() {
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Montserrat-Bold.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter param = new FreeTypeFontGenerator.FreeTypeFontParameter();
         param.size = 30;
         param.color = Color.WHITE;
         myFont = generator.generateFont(param);
         generator.dispose();
+
         customLabel = new Label.LabelStyle();
         customLabel.font = myFont;
 
+        rowsTable = new Table();
+        Table allScoresTable = new Table();
+
+        Stack boardStack = new Stack();
+
+        Table scrollContainer = new Table();
+
+        //region Background
         background = new Texture("backgrounds\\background.jpg");
         backgroundImage = new Image(new TextureRegionDrawable(new TextureRegion(background)));
         game.appearTransition(backgroundImage);
         stage.addActor(backgroundImage);
 
+        board = new Texture("backgrounds\\bgempty.png");
+        boardImage = new Image(new TextureRegionDrawable(new TextureRegion(board)));
+        //endregion
+
+        //region Back button
         backButton = game.activateBackButton(backgroundImage);
         game.buttonAnimation(backButton);
         backButton.addListener(new ClickListener() {
@@ -137,46 +79,173 @@ public class LeaderScreen implements Screen {
             }
         });
         stage.addActor(backButton);
+        //endregion
 
-        board = new Texture("backgrounds\\bgempty.png");
-        boardImage = new Image(new TextureRegionDrawable(new TextureRegion(board)));
-        //game.imageAnimation(boardImage);
-
-        Table rowsTable = new Table();
+        //region Scores Table for leaderboard
         rowsTable.top();
 
-        for (int i = 0; i < 20 ; i++) {
-            rowsTable.row();
-            rowsTable.add(createPlayerRow(i + 1, "Player 0" + (i + 1), (int)(Math.random() * 40000), new Texture("logos\\face.png")))
-                .width(280).height(50).padBottom(20);
-        }
+        float widthh = boardImage.getPrefWidth();
+        float heightt = boardImage.getPrefWidth();
 
-        ScrollPane scrollPane = new ScrollPane(rowsTable);
-        scrollPane.setFadeScrollBars(false); // optional: always show scroll bar
-        scrollPane.setScrollingDisabled(true, false); // only allow vertical scroll
-        scrollPane.setSize(boardImage.getPrefWidth() - 40, boardImage.getPrefHeight() - 150);
+        ScrollPane scrollPane = declareScrollPane(rowsTable, widthh - 40, heightt - 150);
+        scrollContainer.add(scrollPane).size(widthh - 40, heightt - 150).pad(80, -30, 50, 20);
 
-        Table scrollContainer = new Table();
-        scrollContainer.add(scrollPane).size(boardImage.getPrefWidth() - 40, boardImage.getPrefHeight() - 150).pad(80, -30, 50, 20);
-        //scrollContainer.debug();
-
-        Stack boardStack = new Stack();
         boardStack.add(boardImage);
-        boardStack.setSize(boardImage.getPrefWidth() - 40, boardImage.getPrefHeight() - 120);
-        //boardStack.add(rowsTable);
+        boardStack.setSize(widthh - 40, heightt - 120);
         boardStack.add(scrollContainer);
-        //boardStack.debug();
 
-        Table table = new Table();
-        table.setFillParent(true);
-        stage.addActor(table);
-        table.add(boardStack).pad(10, 10, 10, 5);
+        allScoresTable.setFillParent(true);
+        stage.addActor(allScoresTable);
+        allScoresTable.add(boardStack).pad(0, 10, 10, 5);
+        //endregion
 
+//        //region User's record Dialog
+//        userRecordDialog = new Dialog("Your Records", skin) {
+//            @Override
+//            protected void result(Object object) {
+//                // Handle dialog result if needed
+//                hide();
+//            }
+//        };
+//
+//        Texture emptyboard = new Texture("backgrounds\\table.png");
+//        TextureRegionDrawable emptyBoard = new TextureRegionDrawable(new TextureRegion(emptyboard));
+//        userRecordDialog.getContentTable().setBackground(emptyBoard);
+//        Table content = userRecordDialog.getContentTable();
+//        //endregion
+//
+//        //region Scores Table for only user records
+//        rowsTable1.setDebug(true);
+//
+//        float width = 500;
+//        float height = 360;
+//
+//        ScrollPane scrollPane1 = declareScrollPane(rowsTable1, width, height);
+//        //scrollPane1.setDebug(true);
+//
+//        scrollContainer1.add(scrollPane1).size(width, height).pad(80, -30, 50, 20);
+//        //scrollContainer1.setDebug(true);
+//
+//        boardStack1.setSize(width, height);
+//        boardStack1.add(scrollContainer1);
+//        content.add(boardStack1);
+//        //boardStack1.setDebug(true);
+        //endregion
+
+        //region Leaderboard logo
         leader = new Texture("logos\\leaderboard2.png");
         leaderLogo = new Image(new TextureRegionDrawable(new TextureRegion(leader)));
         game.imageAnimation(leaderLogo);
         leaderLogo.setPosition(backgroundImage.getX() + 150, backgroundImage.getY() + 770);
         stage.addActor(leaderLogo);
+        //endregion
+
+        GameApi.getUserHighScores(new GameApi.UserHighScoreCallback() {
+            @Override
+            public void onSuccess(UserHighScoreDTO[] scores) {
+                if (scores.length == 0) {
+                    Label emptyLabel = new Label("No scores yet!", customLabel);
+                    rowsTable.add(emptyLabel).pad(20);
+                    return;
+                }
+
+                for (int i = 0; i < scores.length; i++){
+                    UserHighScoreDTO score = scores[i];
+                    rowsTable.row();
+                    rowsTable.add(createPlayerRow(i+1, score.getUsername(), score.getHighScore(), new Texture("logos\\face.png")))
+                        .width(280).height(50).padBottom(20);
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("ERROR LOADING THE SCORES: " + t.getMessage());
+            }
+        });
+        /*
+        GameApi.getUserScores(new GameApi.MyScoreCallback() {
+            @Override
+            public void onSuccess(ScoreDTO[] myScores) {
+                if (myScores.length == 0) {
+                    Label emptyLabel = new Label("You have no scores yet!", customLabel);
+                    rowsTable1.add(emptyLabel).center();
+                    return;
+                }
+
+                for (int i = 0; i < myScores.length; i++){
+                    ScoreDTO score = myScores[i];
+                    rowsTable1.row();
+                    rowsTable1.add(createUserRow(i+1, score.getScore())).width(150).height(30).padBottom(10);
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("ERROR LOADING THE SCORES: " + t.getMessage());
+            }
+        });
+        */
+        //region Watch user records Button
+        Texture record = new Texture("buttons\\record.png");
+        ImageButton userRecord = new ImageButton(new TextureRegionDrawable(new TextureRegion(record)));
+        game.buttonAnimation(userRecord);
+        userRecord.setPosition(backgroundImage.getX() + 500, backgroundImage.getY() + 100);
+        stage.addActor(userRecord);
+
+        userRecord.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.clicking.play(2f);
+                loadMyScores();
+            }
+        });
+        //endregion
+    }
+
+    public ScrollPane declareScrollPane(Table table, float width, float height){
+        ScrollPane scrollPane = new ScrollPane(table);
+        scrollPane.setFadeScrollBars(false);
+        scrollPane.setScrollingDisabled(true, false); // only allow vertical scroll
+        scrollPane.setSize(width, height);
+        return scrollPane;
+    }
+
+    private void loadMyScores(){
+        rowsTable.clear();
+
+        GameApi.getUserScores(new GameApi.MyScoreCallback() {
+            @Override
+            public void onSuccess(ScoreDTO[] myScores) {
+                if (myScores.length == 0) {
+                    Label emptyLabel = new Label("You have no scores yet!", customLabel);
+                    rowsTable.add(emptyLabel);
+                    return;
+                }
+
+                for (int i = 0; i < myScores.length; i++){
+                    ScoreDTO score = myScores[i];
+                    rowsTable.row();
+                    rowsTable.add(createUserRow(i+1, score.getScore(), score.getTime())).width(280).height(50).left().row();
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("ERROR LOADING THE SCORES: " + t.getMessage());
+            }
+        });
+
+    }
+
+    @Override
+    public void show() {
+    }
+
+    private String formatRank(int rank) {
+        if (rank == 1) return "1st";
+        if (rank == 2) return "2nd";
+        if (rank == 3) return "3rd";
+        return rank + "th";
     }
 
     public Table createPlayerRow(int rank, String username, int score, Texture avatarTexture) {
@@ -190,7 +259,7 @@ public class LeaderScreen implements Screen {
         else bgColor = new Color(MathUtils.random(), MathUtils.random(), MathUtils.random(), 0.2f);
         row.setBackground(skin.newDrawable("white", bgColor));
 
-        Label rankLabel = new Label(String.valueOf(rank), customLabel);
+        Label rankLabel = new Label(formatRank(rank), customLabel);
         rankLabel.setAlignment(Align.center);
 
         Image avatar = new Image(avatarTexture);
@@ -210,6 +279,27 @@ public class LeaderScreen implements Screen {
         return row;
     }
 
+    public Table createUserRow(int rank, int score, String time) {
+        Table row = new Table();
+        row.defaults().pad(5).height(60);
+
+        Color bgColor = new Color(MathUtils.random(), MathUtils.random(), MathUtils.random(), 0.2f);
+        row.setBackground(skin.newDrawable("white", bgColor));
+
+        Label rankLabel = new Label(String.valueOf(rank), customLabel);
+        rankLabel.setAlignment(Align.right);
+
+        Label scoreLabel = new Label(String.valueOf(score), customLabel);
+        scoreLabel.setAlignment(Align.left);
+
+        Label timeLabel = new Label(time, customLabel);
+        timeLabel.setAlignment(Align.left);
+
+        row.add(rankLabel).width(30).pad(10,0,20,20);
+        row.add(timeLabel).width(300).pad(10,10,10,30);
+        row.add(scoreLabel).width(80).pad(10,30,10,10);
+        return row;
+    }
 
     @Override
     public void render(float v) {

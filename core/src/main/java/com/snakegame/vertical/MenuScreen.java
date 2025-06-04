@@ -202,6 +202,7 @@ public class MenuScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
+                GameApi.clearAuthToken();
                 game.setScreen(new FirstScreen(game));
             }
         });
@@ -210,20 +211,6 @@ public class MenuScreen implements Screen {
             baseBg.getY()
         );
         stage.addActor(logoutBtn);
-
-//        nextBtn = game.activateNextButton(baseBg);
-//        game.buttonAnimation(nextBtn);
-//        nextBtn.addListener(new ClickListener() {
-//            @Override
-//            public void clicked(InputEvent event, float x, float y) {
-//                game.clicking.play(2f);
-//                game.setScreen(new MenuScreen(game));
-//            }
-//        });
-//        stage.addActor(nextBtn);
-        //endregion
-
-        //region Avatar Image
         //endregion
 
         stage.addActor(play);

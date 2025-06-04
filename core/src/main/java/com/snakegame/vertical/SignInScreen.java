@@ -77,7 +77,7 @@ public class SignInScreen implements Screen {
         //endregion
 
         //region Warning Dialog
-        warningDialog = new Dialog("", skin);
+        warningDialog = new Dialog("WARNING DIALOG", skin);
         warningDialog.getContentTable().setBackground(dialog);
         Table content2 = warningDialog.getContentTable();
         Label warningMessage = new Label("Wrong username/password!", customLabel);
