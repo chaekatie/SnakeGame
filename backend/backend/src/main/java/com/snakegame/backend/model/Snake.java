@@ -29,11 +29,32 @@ public class Snake {
     }
 
     public void setDirection(Direction direction) {
+        // Get current head position
+        Position head = getHead();
+        
+        // Calculate what the next position would be with the new direction
+        Position nextPos = new Position(head.getX(), head.getY());
+        switch (direction) {
+            case UP: nextPos.setY(head.getY() + 1); break;
+            case DOWN: nextPos.setY(head.getY() - 1); break;
+            case LEFT: nextPos.setX(head.getX() - 1); break;
+            case RIGHT: nextPos.setX(head.getX() + 1); break;
+        }
+        
         // Prevent 180-degree turns
         if (this.direction == Direction.UP && direction == Direction.DOWN) return;
         if (this.direction == Direction.DOWN && direction == Direction.UP) return;
         if (this.direction == Direction.LEFT && direction == Direction.RIGHT) return;
         if (this.direction == Direction.RIGHT && direction == Direction.LEFT) return;
+        
+        // Prevent moves that would cause immediate self-collision
+        // Skip the tail since it will move away
+        for (int i = 0; i < body.size() - 1; i++) {
+            if (nextPos.equals(body.get(i))) {
+                return; // Don't allow the move if it would cause collision
+            }
+        }
+        
         this.direction = direction;
     }
 

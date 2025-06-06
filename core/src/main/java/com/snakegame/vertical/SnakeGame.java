@@ -37,6 +37,9 @@ public class SnakeGame extends Game {
     public Music backgroundMusic;
     public Sound snakeHiss;
     public Sound clicking;
+    public Sound normalFoodSound;
+    public Sound specialFoodSound;
+    public Sound goldenFoodSound;
 
     public Texture backButton;
     public Texture nextButton;
@@ -97,6 +100,11 @@ public class SnakeGame extends Game {
         }
         clicking = Gdx.audio.newSound(Gdx.files.internal("sounds\\clicking.mp3"));
         clicking.play(2f);
+        
+        // Load food eating sounds
+        normalFoodSound = Gdx.audio.newSound(Gdx.files.internal("sounds\\normal_food.mp3"));
+        specialFoodSound = Gdx.audio.newSound(Gdx.files.internal("sounds\\special_food.mp3"));
+        goldenFoodSound = Gdx.audio.newSound(Gdx.files.internal("sounds\\golden_food.mp3"));
 
         //Loads buttons
         backButton = new Texture("buttons\\back.png");
@@ -242,6 +250,11 @@ public class SnakeGame extends Game {
         Preferences prefs = Gdx.app.getPreferences("MySnakeGamePreferences");
         prefs.putFloat("sfxVolume", volume);
         prefs.flush();
+    }
+
+    // Getter for sfx volume
+    public float getSfxVolume() {
+        return sfxVolume;
     }
 
     private static Vector2 getViewportSize(){

@@ -30,7 +30,9 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.utils.Align;
 import java.util.List;
+import java.util.Set;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class GameScreen implements Screen {
     private final SnakeGame game;
@@ -52,7 +54,8 @@ public class GameScreen implements Screen {
     private Texture snakeHeadTexture, snakeBodyTexture;
     private Texture normalFoodTexture, specialFoodTexture, goldenFoodTexture;
     private Texture snakeTailTexture;
-    private Sprite headSprite, bodySprite, tailSprite;
+    private Texture snakeCornerTexture;
+    private Sprite headSprite, bodySprite, tailSprite, cornerSprite;
     private GameStateDTO currentGameState;
     private float updateTimer = 0;
     private static final float UPDATE_INTERVAL = 0.15f; // Snake speed
@@ -61,6 +64,12 @@ public class GameScreen implements Screen {
     private Label scoreLabel;
     private BitmapFont font;
     private boolean isPaused = false; // Add pause state flag
+    
+    // Add animation timers for food effects
+    private float specialFoodTimer = 0;
+    private float goldenFoodTimer = 0;
+    private static final float SPECIAL_FOOD_ANIMATION_SPEED = 2f;
+    private static final float GOLDEN_FOOD_ANIMATION_SPEED = 1.5f;
 
     public GameScreen(SnakeGame game){
         this.game = game;
@@ -87,16 +96,19 @@ public class GameScreen implements Screen {
         snakeHeadTexture = new Texture("snake/head.png");
         snakeBodyTexture = new Texture("snake/body.png");
         snakeTailTexture = new Texture("snake/tail.png");
+        snakeCornerTexture = new Texture("snake/connector.png");
         
         // Initialize sprites
         headSprite = new Sprite(snakeHeadTexture);
         bodySprite = new Sprite(snakeBodyTexture);
         tailSprite = new Sprite(snakeTailTexture);
+        cornerSprite = new Sprite(snakeCornerTexture);
         
         // Set sprite sizes
         headSprite.setSize(cellSize, cellSize);
         bodySprite.setSize(cellSize, cellSize);
         tailSprite.setSize(cellSize, cellSize);
+        cornerSprite.setSize(cellSize, cellSize);
         
         // Load food textures
         normalFoodTexture = new Texture("food/normal.png");
@@ -137,8 +149,8 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 System.out.println("sound on button clicked!");
                 game.clicking.play(3f);
-                game.backgroundMusic.setVolume(0.2f); // Restore music volume
-                game.snakeHiss.setVolume(game.hissLoopId, 2f); // Restore hiss volume
+                game.backgroundMusic.setVolume(0f); // Mute music
+                game.snakeHiss.setVolume(game.hissLoopId, 0f); // Mute hiss
                 soundOffButton.setVisible(true);
                 soundOffButton.setTouchable(Touchable.enabled);
                 soundOnButton.setVisible(false);
@@ -151,8 +163,8 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 System.out.println("sound off button clicked!");
                 game.clicking.play(3f);
-                game.backgroundMusic.setVolume(0f); // Mute music
-                game.snakeHiss.setVolume(game.hissLoopId, 0f); // Mute hiss
+                game.backgroundMusic.setVolume(0.2f); // Restore music volume
+                game.snakeHiss.setVolume(game.hissLoopId, 2f); // Restore hiss volume
                 soundOnButton.setVisible(true);
                 soundOnButton.setTouchable(Touchable.enabled);
                 soundOffButton.setVisible(false);
@@ -317,6 +329,37 @@ public class GameScreen implements Screen {
                     Gdx.app.error("GameScreen", "updateGame: Received null gameState from backend!");
                     return;
                 }
+                
+                // Check if food was eaten by comparing scores
+                if (currentGameState != null && gameState.score > currentGameState.score) {
+                    // Find which food was eaten by comparing food lists
+                    for (GameStateDTO.FoodDTO oldFood : currentGameState.foods) {
+                        boolean foodStillExists = false;
+                        for (GameStateDTO.FoodDTO newFood : gameState.foods) {
+                            if (oldFood.position.x == newFood.position.x && 
+                                oldFood.position.y == newFood.position.y) {
+                                foodStillExists = true;
+                                break;
+                            }
+                        }
+                        if (!foodStillExists) {
+                            // Play sound based on the eaten food's type
+                            switch (oldFood.type) {
+                                case NORMAL:
+                                    game.normalFoodSound.play(game.getSfxVolume());
+                                    break;
+                                case SPECIAL:
+                                    game.specialFoodSound.play(game.getSfxVolume());
+                                    break;
+                                case GOLDEN:
+                                    game.goldenFoodSound.play(game.getSfxVolume());
+                                    break;
+                            }
+                            break;
+                        }
+                    }
+                }
+                
                 currentGameState = gameState;
                 updateScoreLabel();
                 Gdx.app.log("GameScreen", "Game updated successfully:");
@@ -394,6 +437,10 @@ public class GameScreen implements Screen {
             return;
         }
         
+        // Update animation timers
+        specialFoodTimer += Gdx.graphics.getDeltaTime();
+        goldenFoodTimer += Gdx.graphics.getDeltaTime();
+        
         // Get board's position
         float boardX = boardTable.getX();
         float boardY = boardTable.getY();
@@ -406,10 +453,10 @@ public class GameScreen implements Screen {
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
         if (snakeBody != null) {
             Gdx.app.log("GameScreen", "Drawing snake with " + snakeBody.size() + " segments");
-        for (int i = 0; i < snakeBody.size(); i++) {
-            GameStateDTO.PositionDTO segment = snakeBody.get(i);
-            
-            // Calculate screen position (centered grid)
+            for (int i = 0; i < snakeBody.size(); i++) {
+                GameStateDTO.PositionDTO segment = snakeBody.get(i);
+                
+                // Calculate screen position (centered grid)
                 float x = boardX + segment.x * cellSize;
                 float y = boardY + segment.y * cellSize;
             
@@ -429,11 +476,17 @@ public class GameScreen implements Screen {
                     GameStateDTO.PositionDTO prev = snakeBody.get(i - 1);
                     rotation = calculateRotation(segment, prev);
                 } else {
-                    // Body rotation
-                    currentSprite = bodySprite;
+                    // Body rotation - check if this is a corner
                     GameStateDTO.PositionDTO prev = snakeBody.get(i - 1);
                     GameStateDTO.PositionDTO next = snakeBody.get(i + 1);
-                    rotation = calculateRotation(prev, next);
+                    
+                    if (isCorner(prev, segment, next)) {
+                        currentSprite = cornerSprite;
+                        rotation = calculateCornerRotation(prev, segment, next);
+                    } else {
+                        currentSprite = bodySprite;
+                        rotation = calculateRotation(prev, next);
+                    }
                 }
                 
                 // Set position and rotation
@@ -446,14 +499,66 @@ public class GameScreen implements Screen {
         // Draw food
         if (currentGameState.foods != null) {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
-        for (GameStateDTO.FoodDTO food : currentGameState.foods) {
-            Texture texture = getFoodTexture(food.type);
-            
-            // Calculate screen position (centered grid)
-            float x = boardTable.getX() + food.position.x * cellSize;
-            float y = boardTable.getY() + food.position.y * cellSize;
-            
-            batch.draw(texture, x, y, cellSize, cellSize);
+            for (GameStateDTO.FoodDTO food : currentGameState.foods) {
+                Texture texture = getFoodTexture(food.type);
+                
+                // Calculate screen position (centered grid)
+                float x = boardTable.getX() + food.position.x * cellSize;
+                float y = boardTable.getY() + food.position.y * cellSize;
+                
+                // Apply different effects based on food type
+                switch (food.type) {
+                    case SPECIAL:
+                        // Zoom in/out effect for special food
+                        float specialScale = 1.0f + 0.2f * (float)Math.sin(specialFoodTimer * SPECIAL_FOOD_ANIMATION_SPEED);
+                        float specialSize = cellSize * specialScale;
+                        float specialOffset = (specialSize - cellSize) / 2;
+                        batch.draw(texture, 
+                            x - specialOffset, 
+                            y - specialOffset, 
+                            specialSize, 
+                            specialSize);
+                        break;
+                        
+                    case GOLDEN:
+                        // Enhanced golden glow effect with pulsing glow
+                        float glowPulse = 0.3f + 0.2f * (float)Math.sin(goldenFoodTimer * GOLDEN_FOOD_ANIMATION_SPEED);
+                        float glowSize = 10f + 15f * (float)Math.sin(goldenFoodTimer * GOLDEN_FOOD_ANIMATION_SPEED);
+                        
+                        // Outer glow (larger, more transparent)
+                        batch.setColor(1f, 0.8f, 0.2f, glowPulse * 0.5f);
+                        batch.draw(texture, 
+                            x - glowSize, 
+                            y - glowSize, 
+                            cellSize + (glowSize * 2), 
+                            cellSize + (glowSize * 2));
+                            
+                        // Middle glow
+                        batch.setColor(1f, 0.9f, 0.3f, glowPulse * 0.7f);
+                        batch.draw(texture, 
+                            x - (glowSize * 0.7f), 
+                            y - (glowSize * 0.7f), 
+                            cellSize + (glowSize * 1.4f), 
+                            cellSize + (glowSize * 1.4f));
+                            
+                        // Inner glow
+                        batch.setColor(1f, 1f, 0.4f, glowPulse);
+                        batch.draw(texture, 
+                            x - (glowSize * 0.4f), 
+                            y - (glowSize * 0.4f), 
+                            cellSize + (glowSize * 0.8f), 
+                            cellSize + (glowSize * 0.8f));
+                        
+                        // Draw main sprite (constant size)
+                        batch.setColor(1f, 1f, 1f, 1f);
+                        batch.draw(texture, x, y, cellSize, cellSize);
+                        break;
+                        
+                    default:
+                        // Normal food - no special effects
+                        batch.draw(texture, x, y, cellSize, cellSize);
+                        break;
+                }
             }
         }
         
@@ -470,6 +575,50 @@ public class GameScreen implements Screen {
         if (dy < 0) return 270;         // Down
         return 0;                       // Default to right
     }
+
+    private boolean isCorner(GameStateDTO.PositionDTO prev, GameStateDTO.PositionDTO current, GameStateDTO.PositionDTO next) {
+        // Check if the snake is making a turn
+        int dx1 = current.x - prev.x;
+        int dy1 = current.y - prev.y;
+        int dx2 = next.x - current.x;
+        int dy2 = next.y - current.y;
+        
+        // If both movements are not in the same direction, it's a corner
+        return (dx1 != dx2) || (dy1 != dy2);
+    }
+
+    private float calculateCornerRotation(GameStateDTO.PositionDTO prev, GameStateDTO.PositionDTO current, GameStateDTO.PositionDTO next) {
+        int dx1 = current.x - prev.x;
+        int dy1 = current.y - prev.y;
+        int dx2 = next.x - current.x;
+        int dy2 = next.y - current.y;
+
+        String from = direction(dx1, dy1);
+        String to = direction(dx2, dy2);
+
+        if ((from.equals("LEFT") && to.equals("DOWN")) || (from.equals("UP") && to.equals("RIGHT")))
+            return 0f;   // ┌ top-left
+
+        if ((from.equals("DOWN") && to.equals("RIGHT")) || (from.equals("LEFT") && to.equals("UP")))
+            return 90f;  // ┐ top-right
+
+        if ((from.equals("RIGHT") && to.equals("UP")) || (from.equals("DOWN") && to.equals("LEFT")))
+            return 180f; // ┘ bottom-right
+
+        if ((from.equals("UP") && to.equals("LEFT")) || (from.equals("RIGHT") && to.equals("DOWN")))
+            return 270f; // └ bottom-left
+        
+        return 0f;
+    }
+
+    private String direction(int dx, int dy) {
+        if (dx == 1) return "RIGHT";
+        if (dx == -1) return "LEFT";
+        if (dy == 1) return "UP";
+        if (dy == -1) return "DOWN";
+        return "NONE";
+    }
+
 
     private Texture getFoodTexture(GameStateDTO.FoodType type) {
         switch (type) {
@@ -506,6 +655,7 @@ public class GameScreen implements Screen {
         snakeHeadTexture.dispose();
         snakeBodyTexture.dispose();
         snakeTailTexture.dispose();
+        snakeCornerTexture.dispose();
         normalFoodTexture.dispose();
         specialFoodTexture.dispose();
         goldenFoodTexture.dispose();
