@@ -51,6 +51,29 @@ public class SnakeGame extends Game {
 
     public long hissLoopId = -1; // Add this field at the top
 
+    // Add difficulty-related fields
+    public enum Difficulty {
+        EASY(0.2f),
+        MEDIUM(0.15f),
+        HARD(0.1f);
+
+        public final float updateInterval;
+
+        Difficulty(float updateInterval) {
+            this.updateInterval = updateInterval;
+        }
+    }
+
+    private Difficulty currentDifficulty = Difficulty.MEDIUM;
+
+    public Difficulty getCurrentDifficulty() {
+        return currentDifficulty;
+    }
+
+    public void setCurrentDifficulty(Difficulty difficulty) {
+        this.currentDifficulty = difficulty;
+    }
+
     @Override
     public void create() {
         //Load background music

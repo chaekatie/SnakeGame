@@ -289,7 +289,7 @@ public class GameScreen implements Screen {
         updateTimer += v;
             directionChangeCooldown = Math.max(0, directionChangeCooldown - v);
             
-            if (updateTimer >= UPDATE_INTERVAL) {
+            if (updateTimer >= game.getCurrentDifficulty().updateInterval) {
             updateGame();
             updateTimer = 0;
             }

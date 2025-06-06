@@ -17,6 +17,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import javax.swing.JOptionPane;
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
@@ -28,6 +29,7 @@ public class FirstScreen implements Screen {
     private Texture loginTexture, anoymousTexture;
     private Image background;
     private Dialog warningDialog;
+    private Dialog difficultyDialog;
     private Skin skin;
 
     public FirstScreen(SnakeGame game){
@@ -42,8 +44,8 @@ public class FirstScreen implements Screen {
         customLabel.font = game.theSmallFont;
         customLabel.fontColor = Color.BLACK;
 
-        //game.backgroundMusic.play();
-        //game.snakeHiss.play();
+        // Create difficulty selection dialog
+        createDifficultyDialog();
 
         //region Background
         backgroundTexture = new Texture("backgrounds\\mainbg.png");
@@ -175,6 +177,25 @@ public class FirstScreen implements Screen {
         //endregion
     }
 
+    private void createDifficultyDialog() {
+        String[] options = {"EASY", "MEDIUM", "HARD"};
+        int choice = JOptionPane.showOptionDialog(null,
+            "Select Difficulty",
+            "Difficulty Selection",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[1]); // Default to MEDIUM
+
+        if (choice != JOptionPane.CLOSED_OPTION) {
+            game.setCurrentDifficulty(SnakeGame.Difficulty.valueOf(options[choice]));
+        } else {
+            // If user closes dialog, default to MEDIUM
+            game.setCurrentDifficulty(SnakeGame.Difficulty.MEDIUM);
+        }
+    }
+
     public void dialogTextAnimation(Label text, boolean before){
         if(before){
             text.setFontScale(1.1f);
@@ -188,7 +209,10 @@ public class FirstScreen implements Screen {
 
     @Override
     public void show() {
-        // Prepare your screen here.
+        // Show difficulty dialog when screen is shown
+        if (difficultyDialog != null) {
+            difficultyDialog.show(stage);
+        }
     }
 
     @Override
