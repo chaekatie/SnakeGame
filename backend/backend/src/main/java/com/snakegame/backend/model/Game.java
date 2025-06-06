@@ -134,10 +134,15 @@ public class Game {
     }
 
     public void reset() {
+        // Create a new snake instance
         this.snake = new Snake();
-        this.foods.clear();
+        // Clear and reinitialize foods list
+        this.foods = new ArrayList<>();
+        // Reset score
         this.score = 0;
+        // Reset game over state
         this.gameOver = false;
+        // Spawn initial food
         spawnInitialFood();
     }
 }

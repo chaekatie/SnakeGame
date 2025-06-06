@@ -7,6 +7,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
@@ -43,18 +44,23 @@ public class GameScreen implements Screen {
     private int cellSize = 32;
     private Table boardTable, topBarTable;
     private Texture foodTexture, cupTexture, pauseTexture;
-    private Texture continueTexture, soundOnTexture, soundOffTexture;
+    private Texture resetTexture, soundOnTexture, soundOffTexture;
     private Image foodImage, cupImage;
-    private ImageButton pauseButton, continueButton, soundOnButton, soundOffButton;
+    private ImageButton pauseButton, resetButton, soundOnButton, soundOffButton;
     private int hasSound;
     
     private Texture snakeHeadTexture, snakeBodyTexture;
     private Texture normalFoodTexture, specialFoodTexture, goldenFoodTexture;
+    private Texture snakeTailTexture;
+    private Sprite headSprite, bodySprite, tailSprite;
     private GameStateDTO currentGameState;
     private float updateTimer = 0;
     private static final float UPDATE_INTERVAL = 0.15f; // Snake speed
+    private float directionChangeCooldown = 0;
+    private static final float DIRECTION_CHANGE_COOLDOWN = 0.05f; // Cooldown between direction changes
     private Label scoreLabel;
     private BitmapFont font;
+    private boolean isPaused = false; // Add pause state flag
 
     public GameScreen(SnakeGame game){
         this.game = game;
@@ -80,6 +86,17 @@ public class GameScreen implements Screen {
         // Load snake textures
         snakeHeadTexture = new Texture("snake/head.png");
         snakeBodyTexture = new Texture("snake/body.png");
+        snakeTailTexture = new Texture("snake/tail.png");
+        
+        // Initialize sprites
+        headSprite = new Sprite(snakeHeadTexture);
+        bodySprite = new Sprite(snakeBodyTexture);
+        tailSprite = new Sprite(snakeTailTexture);
+        
+        // Set sprite sizes
+        headSprite.setSize(cellSize, cellSize);
+        bodySprite.setSize(cellSize, cellSize);
+        tailSprite.setSize(cellSize, cellSize);
         
         // Load food textures
         normalFoodTexture = new Texture("food/normal.png");
@@ -95,10 +112,10 @@ public class GameScreen implements Screen {
         pauseButton = new ImageButton(pauseDrawable);
         game.buttonAnimation(pauseButton);
 
-        continueTexture = new Texture("buttons\\play.png");
-        TextureRegionDrawable continueDrawable = new TextureRegionDrawable(new TextureRegion(continueTexture));
-        continueButton = new ImageButton(continueDrawable);
-        game.buttonAnimation(continueButton);
+        resetTexture = new Texture("buttons\\play.png");
+        TextureRegionDrawable resetDrawable = new TextureRegionDrawable(new TextureRegion(resetTexture));
+        resetButton = new ImageButton(resetDrawable);
+        game.buttonAnimation(resetButton);
 
         soundOnTexture = new Texture("buttons\\soundon.png");
         TextureRegionDrawable soundOnDrawable = new TextureRegionDrawable(new TextureRegion(soundOnTexture));
@@ -120,6 +137,8 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 System.out.println("sound on button clicked!");
                 game.clicking.play(3f);
+                game.backgroundMusic.setVolume(0.2f); // Restore music volume
+                game.snakeHiss.setVolume(game.hissLoopId, 2f); // Restore hiss volume
                 soundOffButton.setVisible(true);
                 soundOffButton.setTouchable(Touchable.enabled);
                 soundOnButton.setVisible(false);
@@ -132,10 +151,47 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 System.out.println("sound off button clicked!");
                 game.clicking.play(3f);
+                game.backgroundMusic.setVolume(0f); // Mute music
+                game.snakeHiss.setVolume(game.hissLoopId, 0f); // Mute hiss
                 soundOnButton.setVisible(true);
                 soundOnButton.setTouchable(Touchable.enabled);
                 soundOffButton.setVisible(false);
                 soundOffButton.setTouchable(Touchable.disabled);
+            }
+        });
+
+        resetButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.clicking.play(3f);
+                // Reset game state
+                GameApi.resetGame(new GameApi.GameStateCallback() {
+                    @Override
+                    public void onSuccess(GameStateDTO gameState) {
+                        if (gameState == null) {
+                            Gdx.app.error("GameScreen", "resetGame: Received null gameState from backend!");
+                            return;
+                        }
+                        currentGameState = gameState;
+                        updateScoreLabel();
+                        isPaused = false;
+                        Gdx.app.log("GameScreen", "Game reset successful. New snake size: " + 
+                            (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
+                    }
+                    @Override
+                    public void onError(Throwable t) {
+                        Gdx.app.error("GameScreen", "Error resetting game", t);
+                    }
+                });
+            }
+        });
+
+        // Add pause button listener
+        pauseButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.clicking.play(3f);
+                isPaused = !isPaused; // Toggle pause state
             }
         });
 
@@ -145,7 +201,7 @@ public class GameScreen implements Screen {
 
         topBarTable.top().padTop(100);
         topBarTable.add(pauseButton).pad(10).left();
-        topBarTable.add(continueButton).pad(10).center();
+        topBarTable.add(resetButton).pad(10).center();
         topBarTable.add(soundBtnStack).pad(10).right();
         stage.addActor(topBarTable);
         //endregion
@@ -229,10 +285,14 @@ public class GameScreen implements Screen {
     @Override
     public void render(float v) {
     	// Game logic update
+        if (!isPaused) { // Only update game if not paused
         updateTimer += v;
-        if (updateTimer >= UPDATE_INTERVAL) {
+            directionChangeCooldown = Math.max(0, directionChangeCooldown - v);
+            
+            if (updateTimer >= UPDATE_INTERVAL) {
             updateGame();
             updateTimer = 0;
+            }
         }
         
         // Handle input
@@ -281,19 +341,28 @@ public class GameScreen implements Screen {
         // Remove stage input processor temporarily to allow keyboard input
         Gdx.input.setInputProcessor(null);
         
-        if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-            Gdx.app.log("GameScreen", "UP key pressed - sending direction UP");
+        // Only process direction changes if cooldown is 0
+        if (directionChangeCooldown <= 0) {
+    	if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+                Gdx.app.log("GameScreen", "UP key pressed - sending direction UP");
             GameApi.sendDirection(Direction.UP);
+                directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
-            Gdx.app.log("GameScreen", "DOWN key pressed - sending direction DOWN");
+                Gdx.app.log("GameScreen", "DOWN key pressed - sending direction DOWN");
             GameApi.sendDirection(Direction.DOWN);
+                directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
-            Gdx.app.log("GameScreen", "LEFT key pressed - sending direction LEFT");
+                Gdx.app.log("GameScreen", "LEFT key pressed - sending direction LEFT");
             GameApi.sendDirection(Direction.LEFT);
+                directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
-            Gdx.app.log("GameScreen", "RIGHT key pressed - sending direction RIGHT");
+                Gdx.app.log("GameScreen", "RIGHT key pressed - sending direction RIGHT");
             GameApi.sendDirection(Direction.RIGHT);
-        } else if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+                directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
+            }
+        }
+        
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             Gdx.app.log("GameScreen", "R key pressed - resetting game");
             GameApi.resetGame(new GameApi.GameStateCallback() {
                 @Override
@@ -328,7 +397,7 @@ public class GameScreen implements Screen {
         // Get board's position
         float boardX = boardTable.getX();
         float boardY = boardTable.getY();
-        
+
         // Set batch projection to match stage
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
@@ -337,33 +406,69 @@ public class GameScreen implements Screen {
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
         if (snakeBody != null) {
             Gdx.app.log("GameScreen", "Drawing snake with " + snakeBody.size() + " segments");
-            for (int i = 0; i < snakeBody.size(); i++) {
-                GameStateDTO.PositionDTO segment = snakeBody.get(i);
-                
-                // Calculate screen position (centered grid)
+        for (int i = 0; i < snakeBody.size(); i++) {
+            GameStateDTO.PositionDTO segment = snakeBody.get(i);
+            
+            // Calculate screen position (centered grid)
                 float x = boardX + segment.x * cellSize;
                 float y = boardY + segment.y * cellSize;
+            
+                Sprite currentSprite;
+                float rotation = 0;
                 
-                Texture texture = (i == 0) ? snakeHeadTexture : snakeBodyTexture;
-                batch.draw(texture, x, y, cellSize, cellSize);
+                if (i == 0) {
+                    // Head rotation
+                    currentSprite = headSprite;
+                    if (i + 1 < snakeBody.size()) {
+                        GameStateDTO.PositionDTO next = snakeBody.get(i + 1);
+                        rotation = calculateRotation(next, segment);
+                    }
+                } else if (i == snakeBody.size() - 1) {
+                    // Tail rotation
+                    currentSprite = tailSprite;
+                    GameStateDTO.PositionDTO prev = snakeBody.get(i - 1);
+                    rotation = calculateRotation(segment, prev);
+                } else {
+                    // Body rotation
+                    currentSprite = bodySprite;
+                    GameStateDTO.PositionDTO prev = snakeBody.get(i - 1);
+                    GameStateDTO.PositionDTO next = snakeBody.get(i + 1);
+                    rotation = calculateRotation(prev, next);
+                }
+                
+                // Set position and rotation
+                currentSprite.setPosition(x, y);
+                currentSprite.setRotation(rotation);
+                currentSprite.draw(batch);
             }
         }
         
         // Draw food
         if (currentGameState.foods != null) {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
-            for (GameStateDTO.FoodDTO food : currentGameState.foods) {
-                Texture texture = getFoodTexture(food.type);
-                
-                // Calculate screen position (centered grid)
-                float x = boardTable.getX() + food.position.x * cellSize;
-                float y = boardTable.getY() + food.position.y * cellSize;
-                
-                batch.draw(texture, x, y, cellSize, cellSize);
+        for (GameStateDTO.FoodDTO food : currentGameState.foods) {
+            Texture texture = getFoodTexture(food.type);
+            
+            // Calculate screen position (centered grid)
+            float x = boardTable.getX() + food.position.x * cellSize;
+            float y = boardTable.getY() + food.position.y * cellSize;
+            
+            batch.draw(texture, x, y, cellSize, cellSize);
             }
         }
         
         batch.end();
+    }
+
+    private float calculateRotation(GameStateDTO.PositionDTO from, GameStateDTO.PositionDTO to) {
+        float dx = to.x - from.x;
+        float dy = to.y - from.y;
+        
+        if (dx > 0) return 0;           // Right
+        if (dx < 0) return 180;         // Left
+        if (dy > 0) return 90;          // Up
+        if (dy < 0) return 270;         // Down
+        return 0;                       // Default to right
     }
 
     private Texture getFoodTexture(GameStateDTO.FoodType type) {
@@ -400,6 +505,7 @@ public class GameScreen implements Screen {
     	backgroundTexture.dispose();
         snakeHeadTexture.dispose();
         snakeBodyTexture.dispose();
+        snakeTailTexture.dispose();
         normalFoodTexture.dispose();
         specialFoodTexture.dispose();
         goldenFoodTexture.dispose();
