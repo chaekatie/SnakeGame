@@ -47,7 +47,8 @@ public class GameScreen implements Screen {
     private Image foodImage, cupImage;
     private ImageButton pauseButton, continueButton, soundOnButton, soundOffButton;
     private int hasSound;
-    
+    private Array<FoodType> selectedFoods;
+
     private Texture snakeHeadTexture, snakeBodyTexture;
     private Texture normalFoodTexture, specialFoodTexture, goldenFoodTexture;
     private GameStateDTO currentGameState;
@@ -56,15 +57,15 @@ public class GameScreen implements Screen {
     private Label scoreLabel;
     private BitmapFont font;
 
-    public GameScreen(SnakeGame game){
+    public GameScreen(SnakeGame game, Array<FoodType> selectedFoods){
         this.game = game;
-
+        this.selectedFoods = selectedFoods;
         OrthographicCamera camera = new OrthographicCamera();
         gridTile = new Texture("backgrounds\\gridtile1.png");
         batch = new SpriteBatch();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, batch);
-        
+
         // Initialize with empty game state
         currentGameState = new GameStateDTO();
         currentGameState.snakeBody = new ArrayList<>();
@@ -76,15 +77,18 @@ public class GameScreen implements Screen {
         backgroundImage = new Image(background);
         game.appearTransition(backgroundImage);
         stage.addActor(backgroundImage);
-        
+
         // Load snake textures
         snakeHeadTexture = new Texture("snake/head.png");
         snakeBodyTexture = new Texture("snake/body.png");
-        
+
         // Load food textures
-        normalFoodTexture = new Texture("food/normal.png");
-        specialFoodTexture = new Texture("food/special.png");
-        goldenFoodTexture = new Texture("food/golden.png");
+        for (FoodType food : selectedFoods) {
+            System.out.println("Chosen food: " + food.name() + " with path " + food.texturePath);
+        }
+        normalFoodTexture = new Texture(selectedFoods.get(0).texturePath);
+        specialFoodTexture = new Texture(selectedFoods.get(1).texturePath);
+        goldenFoodTexture = new Texture(selectedFoods.get(2).texturePath);
 
         //region Top bar
         topBarTable = new Table();
@@ -155,15 +159,15 @@ public class GameScreen implements Screen {
         TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture("backgrounds\\gridtile2.png")));
 
         boardTable = new Table();
-        
+
         // Calculate the total board size
         float totalBoardWidth = cols * cellSize;
         float totalBoardHeight = rows * cellSize;
-        
+
         // Center the board on screen
         float boardX = (game.V_WIDTH - totalBoardWidth) / 2f;
         float boardY = (game.V_HEIGHT - totalBoardHeight) / 2f;
-        
+
         boardTable.setPosition(boardX, boardY);
 
         for (int row = 0; row < rows; row++) {
@@ -173,17 +177,17 @@ public class GameScreen implements Screen {
             }
             boardTable.row();
         }
-        
+
         boardTable.pack();
-        
+
         boardTable.setPosition(
         		boardX,
         		boardY
         	);
-        
+
         stage.addActor(boardTable);
         //endregion
-        
+
         // Create score label
         font = new BitmapFont();
         font.getData().setScale(2);
@@ -195,7 +199,7 @@ public class GameScreen implements Screen {
         // Initial game state fetch
         fetchGameState();
     }
-    
+
     private void fetchGameState() {
         GameApi.fetchGameState(new GameApi.GameStateCallback() {
             @Override
@@ -206,7 +210,7 @@ public class GameScreen implements Screen {
                 }
                 currentGameState = gameState;
                 updateScoreLabel();
-                Gdx.app.log("GameScreen", "Game state fetched successfully. Snake size: " + 
+                Gdx.app.log("GameScreen", "Game state fetched successfully. Snake size: " +
                     (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
             }
             @Override
@@ -215,13 +219,13 @@ public class GameScreen implements Screen {
             }
         });
     }
-    
+
     private void updateScoreLabel() {
         if (currentGameState != null) {
             scoreLabel.setText("Score: " + currentGameState.score);
         }
     }
-    
+
     @Override
     public void show() {
     }
@@ -234,21 +238,21 @@ public class GameScreen implements Screen {
             updateGame();
             updateTimer = 0;
         }
-        
+
         // Handle input
         handleInput();
-        
+
         // Rendering
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(v);
         stage.draw();
-        
+
         // Draw game objects
         drawGameObjects();
     }
-    
+
     private void updateGame() {
         GameApi.updateGame(new GameApi.GameStateCallback() {
             @Override
@@ -260,7 +264,7 @@ public class GameScreen implements Screen {
                 currentGameState = gameState;
                 updateScoreLabel();
                 Gdx.app.log("GameScreen", "Game updated successfully:");
-                Gdx.app.log("GameScreen", "- Snake size: " + 
+                Gdx.app.log("GameScreen", "- Snake size: " +
                     (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
                 if (gameState.snakeBody != null && !gameState.snakeBody.isEmpty()) {
                     GameStateDTO.PositionDTO head = gameState.snakeBody.get(0);
@@ -276,11 +280,11 @@ public class GameScreen implements Screen {
             }
         });
     }
-    
+
     private void handleInput() {
         // Remove stage input processor temporarily to allow keyboard input
         Gdx.input.setInputProcessor(null);
-        
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
             Gdx.app.log("GameScreen", "UP key pressed - sending direction UP");
             GameApi.sendDirection(Direction.UP);
@@ -304,7 +308,7 @@ public class GameScreen implements Screen {
                     }
                     currentGameState = gameState;
                     updateScoreLabel();
-                    Gdx.app.log("GameScreen", "Game reset successful. New snake size: " + 
+                    Gdx.app.log("GameScreen", "Game reset successful. New snake size: " +
                         (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
                 }
                 @Override
@@ -313,56 +317,57 @@ public class GameScreen implements Screen {
                 }
             });
         }
-        
+
         // Restore stage input processor for UI elements
         Gdx.input.setInputProcessor(stage);
     }
 
-    
+
     private void drawGameObjects() {
         if (currentGameState == null) {
             Gdx.app.log("GameScreen", "Current game state is null");
             return;
         }
-        
+
         // Get board's position
         float boardX = boardTable.getX();
         float boardY = boardTable.getY();
-        
+
         // Set batch projection to match stage
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-        
+
         // Draw snake
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
         if (snakeBody != null) {
             Gdx.app.log("GameScreen", "Drawing snake with " + snakeBody.size() + " segments");
             for (int i = 0; i < snakeBody.size(); i++) {
                 GameStateDTO.PositionDTO segment = snakeBody.get(i);
-                
+
                 // Calculate screen position (centered grid)
                 float x = boardX + segment.x * cellSize;
                 float y = boardY + segment.y * cellSize;
-                
+
                 Texture texture = (i == 0) ? snakeHeadTexture : snakeBodyTexture;
                 batch.draw(texture, x, y, cellSize, cellSize);
             }
         }
-        
+
         // Draw food
         if (currentGameState.foods != null) {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
             for (GameStateDTO.FoodDTO food : currentGameState.foods) {
                 Texture texture = getFoodTexture(food.type);
-                
+
                 // Calculate screen position (centered grid)
                 float x = boardTable.getX() + food.position.x * cellSize;
                 float y = boardTable.getY() + food.position.y * cellSize;
-                
+
                 batch.draw(texture, x, y, cellSize, cellSize);
             }
+
         }
-        
+
         batch.end();
     }
 
@@ -374,7 +379,7 @@ public class GameScreen implements Screen {
             default: return normalFoodTexture;
         }
     }
-    
+
     @Override
     public void resize(int i, int i1) {
         viewport.update(i, i1, true);

@@ -21,6 +21,7 @@ public class GameApi {
     private static final String BASE_URL_2 = "http://localhost:8080/api/auth";
     private static final String BASE_URL_3 = "http://localhost:8080/api/scores";
     private static final String AUTH_TOKEN_KEY = "auth_token";
+    private static boolean isLoggedIn;
 
     public interface GameStateCallback {
         void onSuccess(GameStateDTO gameState);
@@ -55,14 +56,18 @@ public class GameApi {
     private static void setAuthToken(String token) {
         Preferences prefs = Gdx.app.getPreferences("SnakeGamePrefs");
         prefs.putString(AUTH_TOKEN_KEY, token);
+        isLoggedIn = true;
         prefs.flush();
     }
 
     public static void clearAuthToken(){
         Preferences prefs = Gdx.app.getPreferences("SnakeGamePrefs");
         prefs.remove(AUTH_TOKEN_KEY);
+        isLoggedIn = false;
         prefs.flush();
     }
+
+    public static boolean getLoginFlag() { return isLoggedIn; }
 
     public static void fetchGameState(GameStateCallback callback) {
         String token = getAuthToken();
