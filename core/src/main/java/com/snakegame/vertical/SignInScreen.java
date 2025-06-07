@@ -41,10 +41,6 @@ public class SignInScreen implements Screen {
         BitmapFont font = game.theBigFont;
         loginSuccessful = false;
 
-//        loading = new Image(new Texture("snakeloading.png"));
-//        loading.setOrigin(Align.center);
-//        loading.addAction(Actions.forever(Actions.rotateBy(360f, 1.5f)));
-
         Label.LabelStyle customLabel = new Label.LabelStyle();
         customLabel.font = game.theSmallFont;
         customLabel.fontColor = Color.BLACK;
@@ -141,7 +137,7 @@ public class SignInScreen implements Screen {
         loginButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Login button clicked!"); // ✅ Step 1: check this logs
+                System.out.println("Login button clicked!");
                 game.clicking.play(2f);
 
                 String user = username.getText();
@@ -162,7 +158,7 @@ public class SignInScreen implements Screen {
                                 @Override
                                 public void run() {
                                     successDialog.hide();
-                                    game.setScreen(new MenuScreen(game));
+                                    game.setScreen(new MenuScreen(game, loginSuccessful));
                                 }
                             }, 1f);
                         });

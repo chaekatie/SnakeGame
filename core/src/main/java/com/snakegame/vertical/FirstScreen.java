@@ -29,6 +29,7 @@ public class FirstScreen implements Screen {
     private Image background;
     private Dialog warningDialog;
     private Skin skin;
+    private boolean isLoggedIn;
 
     public FirstScreen(SnakeGame game){
         this.game = game;
@@ -37,6 +38,7 @@ public class FirstScreen implements Screen {
         stage = new Stage(viewport, game.batch);
         skin = new Skin(Gdx.files.internal("uiskin.json"));
         Gdx.input.setInputProcessor(stage);
+        isLoggedIn = GameApi.getLoginFlag();
 
         Label.LabelStyle customLabel = new Label.LabelStyle();
         customLabel.font = game.theSmallFont;
@@ -130,7 +132,7 @@ public class FirstScreen implements Screen {
                     System.out.println("User chose to stay anonymously");
                     warningDialog.hide();
                     GameApi.clearAuthToken();
-
+                    isLoggedIn = false;
                     background.addAction(Actions.sequence(
                         Actions.parallel(
                             Actions.fadeOut(0.5f),
@@ -141,7 +143,7 @@ public class FirstScreen implements Screen {
                             Actions.run(() -> anoymousButton.addAction(Actions.moveBy(500, 0, 0.5f)))
                         ),
                         Actions.run(() -> {
-                            game.setScreen(new MenuScreen(game));
+                            game.setScreen(new MenuScreen(game, isLoggedIn));
                         })
                     ));
                 } else {

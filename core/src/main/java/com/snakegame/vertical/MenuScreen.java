@@ -19,20 +19,22 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class MenuScreen implements Screen {
-    private Texture mainBg, logout;
+    private Texture mainBg, logout, login;
     private Image baseBg, avatarImage;
-    private ImageButton play, leader, prize, setting, about, logoutBtn;
+    private ImageButton play, leader, prize, setting, about, logoutBtn, loginBtn;
     private SnakeGame game;
     private Stage stage;
     private Viewport viewport;
     private Texture playButton, prizeButton, leaderButton, settingButton, aboutButton, avatarTexture;
+    private boolean isLoggedIn;
 
-    public MenuScreen(SnakeGame game){
+    public MenuScreen(SnakeGame game, boolean isLoggedIn){
         this.game = game;
         OrthographicCamera camera = new OrthographicCamera();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, game.batch);
         Gdx.input.setInputProcessor(stage);
+        this.isLoggedIn = isLoggedIn;
 
         mainBg = new Texture("backgrounds\\menubg.jpg");
         baseBg = new Image(mainBg);
@@ -63,7 +65,7 @@ public class MenuScreen implements Screen {
                         Actions.run(() -> play.addAction(Actions.moveBy(500, 0, 0.5f)))
                     ),
                     Actions.run(() -> {
-                        game.setScreen(new GameScreen(game));
+                        game.setScreen(new GameSettings(game, isLoggedIn));
                     })
                 ));
             }
@@ -125,7 +127,7 @@ public class MenuScreen implements Screen {
                         Actions.run(() -> leader.addAction(Actions.moveBy(500, 0, 0.5f)))
                     ),
                     Actions.run(() -> {
-                        game.setScreen(new LeaderScreen(game));
+                        game.setScreen(new LeaderScreen(game, isLoggedIn));
                     })
                 ));
             }
@@ -156,7 +158,7 @@ public class MenuScreen implements Screen {
                         Actions.run(() -> setting.addAction(Actions.moveBy(500, 0, 0.5f)))
                     ),
                     Actions.run(() -> {
-                        game.setScreen(new SettingScreen(game));
+                        game.setScreen(new SettingScreen(game, isLoggedIn));
                     })
                 ));
             }
@@ -187,14 +189,14 @@ public class MenuScreen implements Screen {
                         Actions.run(() -> about.addAction(Actions.moveBy(500, 0, 0.5f)))
                     ),
                     Actions.run(() -> {
-                        game.setScreen(new AboutScreen(game));
+                        game.setScreen(new AboutScreen(game, isLoggedIn));
                     })
                 ));
             }
         });
         //endregion
 
-        //region Logout buttons
+        //region Logout buttons for logged-in users
         logout = new Texture("buttons\\logout.png");
         logoutBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(logout)));
         game.buttonAnimation(logoutBtn);
@@ -210,7 +212,30 @@ public class MenuScreen implements Screen {
             baseBg.getX() + 580,
             baseBg.getY()
         );
-        stage.addActor(logoutBtn);
+        if(isLoggedIn) {
+            stage.addActor(logoutBtn);
+        }
+        //endregion
+
+        //region Login button for anoymous user
+        login = new Texture("buttons\\login.png");
+        loginBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(logout)));
+        game.buttonAnimation(loginBtn);
+        logoutBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.clicking.play(2f);
+                GameApi.clearAuthToken();
+                game.setScreen(new SignInScreen(game));
+            }
+        });
+        loginBtn.setPosition(
+            baseBg.getX() + 580,
+            baseBg.getY()
+        );
+        if(!isLoggedIn) {
+            stage.addActor(loginBtn);
+        }
         //endregion
 
         stage.addActor(play);

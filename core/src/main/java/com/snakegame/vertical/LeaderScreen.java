@@ -27,13 +27,12 @@ public class LeaderScreen implements Screen {
     private Viewport viewport;
     private Texture background, leader, board;
     private Image backgroundImage, leaderLogo, boardImage;
-    private ImageButton backButton;
-    private BitmapFont myFont;
+    private ImageButton backButton, filterWeek, filterMonth, filterYear;
     private Label.LabelStyle customLabel;
     private Skin skin;
     private Table rowsTable;
 
-    public LeaderScreen(SnakeGame game){
+    public LeaderScreen(SnakeGame game, boolean isLoggedIn){
         this.game = game;
         OrthographicCamera camera = new OrthographicCamera();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
@@ -45,7 +44,7 @@ public class LeaderScreen implements Screen {
         FreeTypeFontGenerator.FreeTypeFontParameter param = new FreeTypeFontGenerator.FreeTypeFontParameter();
         param.size = 30;
         param.color = Color.WHITE;
-        myFont = generator.generateFont(param);
+        BitmapFont myFont = generator.generateFont(param);
         generator.dispose();
 
         customLabel = new Label.LabelStyle();
@@ -53,9 +52,7 @@ public class LeaderScreen implements Screen {
 
         rowsTable = new Table();
         Table allScoresTable = new Table();
-
         Stack boardStack = new Stack();
-
         Table scrollContainer = new Table();
 
         //region Background
@@ -75,7 +72,7 @@ public class LeaderScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
-                game.setScreen(new MenuScreen(game));
+                game.setScreen(new MenuScreen(game, isLoggedIn));
             }
         });
         stage.addActor(backButton);
@@ -97,39 +94,6 @@ public class LeaderScreen implements Screen {
         allScoresTable.setFillParent(true);
         stage.addActor(allScoresTable);
         allScoresTable.add(boardStack).pad(0, 10, 10, 5);
-        //endregion
-
-//        //region User's record Dialog
-//        userRecordDialog = new Dialog("Your Records", skin) {
-//            @Override
-//            protected void result(Object object) {
-//                // Handle dialog result if needed
-//                hide();
-//            }
-//        };
-//
-//        Texture emptyboard = new Texture("backgrounds\\table.png");
-//        TextureRegionDrawable emptyBoard = new TextureRegionDrawable(new TextureRegion(emptyboard));
-//        userRecordDialog.getContentTable().setBackground(emptyBoard);
-//        Table content = userRecordDialog.getContentTable();
-//        //endregion
-//
-//        //region Scores Table for only user records
-//        rowsTable1.setDebug(true);
-//
-//        float width = 500;
-//        float height = 360;
-//
-//        ScrollPane scrollPane1 = declareScrollPane(rowsTable1, width, height);
-//        //scrollPane1.setDebug(true);
-//
-//        scrollContainer1.add(scrollPane1).size(width, height).pad(80, -30, 50, 20);
-//        //scrollContainer1.setDebug(true);
-//
-//        boardStack1.setSize(width, height);
-//        boardStack1.add(scrollContainer1);
-//        content.add(boardStack1);
-//        //boardStack1.setDebug(true);
         //endregion
 
         //region Leaderboard logo
@@ -162,29 +126,7 @@ public class LeaderScreen implements Screen {
                 System.out.println("ERROR LOADING THE SCORES: " + t.getMessage());
             }
         });
-        /*
-        GameApi.getUserScores(new GameApi.MyScoreCallback() {
-            @Override
-            public void onSuccess(ScoreDTO[] myScores) {
-                if (myScores.length == 0) {
-                    Label emptyLabel = new Label("You have no scores yet!", customLabel);
-                    rowsTable1.add(emptyLabel).center();
-                    return;
-                }
 
-                for (int i = 0; i < myScores.length; i++){
-                    ScoreDTO score = myScores[i];
-                    rowsTable1.row();
-                    rowsTable1.add(createUserRow(i+1, score.getScore())).width(150).height(30).padBottom(10);
-                }
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                System.out.println("ERROR LOADING THE SCORES: " + t.getMessage());
-            }
-        });
-        */
         //region Watch user records Button
         Texture record = new Texture("buttons\\record.png");
         ImageButton userRecord = new ImageButton(new TextureRegionDrawable(new TextureRegion(record)));
@@ -199,6 +141,14 @@ public class LeaderScreen implements Screen {
                 loadMyScores();
             }
         });
+        //endregion
+
+        //region Filter Leaderboard Button
+        Texture filter = new Texture("buttons\\filter.png");
+        ImageButton filterBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(filter)));
+        game.buttonAnimation(filterBtn);
+        filterBtn.setPosition(backgroundImage.getX() + 600, backgroundImage.getY() + 700);
+        stage.addActor(filterBtn);
         //endregion
     }
 

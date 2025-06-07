@@ -37,13 +37,15 @@ public class SettingScreen implements Screen {
     private final Slider musicSlider, sfxSlider;
     private Texture[] avatarTexture;
     private Label selected;
+    private boolean isLoggedin;
 
-    public SettingScreen(SnakeGame game){
+    public SettingScreen(SnakeGame game, boolean isLoggedIn){
         this.game = game;
         OrthographicCamera camera = new OrthographicCamera();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, game.batch);
         Gdx.input.setInputProcessor(stage);
+        this.isLoggedin = isLoggedIn;
 
         mainBg = new Texture("backgrounds\\emptybg.png");
         background = new Image(mainBg);
@@ -102,7 +104,6 @@ public class SettingScreen implements Screen {
                     avatarImage.setScale(1.2f); // highlight selected one
                 }
             });
-
             avatarTable.add(avatarImage).pad(20);
         }
         avatarTable.pack();
@@ -168,7 +169,7 @@ public class SettingScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
-                game.setScreen(new MenuScreen(game));
+                game.setScreen(new MenuScreen(game, isLoggedIn));
             }
         });
         stage.addActor(backButton);
