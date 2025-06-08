@@ -47,7 +47,7 @@ public class FirstScreen implements Screen {
         customLabel.fontColor = Color.BLACK;
 
         // Create difficulty selection dialog
-        createDifficultyDialog();
+        //createDifficultyDialog();
 
         //region Background
         backgroundTexture = new Texture("backgrounds\\mainbg.png");
@@ -178,7 +178,7 @@ public class FirstScreen implements Screen {
         stage.addActor(anoymousButton);
         //endregion
     }
-
+/*
     private void createDifficultyDialog() {
         String[] options = {"EASY", "MEDIUM", "HARD"};
         int choice = JOptionPane.showOptionDialog(null,
@@ -197,7 +197,7 @@ public class FirstScreen implements Screen {
             game.setCurrentDifficulty(SnakeGame.Difficulty.MEDIUM);
         }
     }
-
+*/
     public void dialogTextAnimation(Label text, boolean before){
         if(before){
             text.setFontScale(1.1f);
@@ -211,10 +211,10 @@ public class FirstScreen implements Screen {
 
     @Override
     public void show() {
-        // Show difficulty dialog when screen is shown
-        if (difficultyDialog != null) {
-            difficultyDialog.show(stage);
-        }
+// Show difficulty dialog when screen is shown
+//            if (difficultyDialog != null) {
+//                difficultyDialog.show(stage);
+//        }
     }
 
     @Override

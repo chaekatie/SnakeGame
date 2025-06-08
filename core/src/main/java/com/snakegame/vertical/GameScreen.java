@@ -51,6 +51,7 @@ public class GameScreen implements Screen {
     private ImageButton pauseButton, resetButton, soundOnButton, soundOffButton;
     private int hasSound;
     private Array<FoodType> selectedFoods;
+    private LayoutType selectedLayout;
 
     private Texture snakeHeadTexture, snakeBodyTexture;
     private Texture normalFoodTexture, specialFoodTexture, goldenFoodTexture;
@@ -72,11 +73,11 @@ public class GameScreen implements Screen {
     private static final float SPECIAL_FOOD_ANIMATION_SPEED = 2f;
     private static final float GOLDEN_FOOD_ANIMATION_SPEED = 1.5f;
 
-    public GameScreen(SnakeGame game, Array<FoodType> selectedFoods){
+    public GameScreen(SnakeGame game, Array<FoodType> selectedFoods, LayoutType selectedLayout){
         this.game = game;
         this.selectedFoods = selectedFoods;
         OrthographicCamera camera = new OrthographicCamera();
-        gridTile = new Texture("backgrounds\\gridtile1.png");
+        //gridTile = new Texture("backgrounds\\gridtile1.png");
         batch = new SpriteBatch();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, batch);
@@ -112,9 +113,9 @@ public class GameScreen implements Screen {
         cornerSprite.setSize(cellSize, cellSize);
 
         // Load food textures
-        for (FoodType food : selectedFoods) {
-            System.out.println("Chosen food: " + food.name() + " with path " + food.texturePath);
-        }
+        System.out.println("FOOD ONE: " + selectedFoods.get(0).texturePath);
+        System.out.println("FOOD TWO: " + selectedFoods.get(1).texturePath);
+        System.out.println("FOOD THREE: " + selectedFoods.get(2).texturePath);
         normalFoodTexture = new Texture(selectedFoods.get(0).texturePath);
         specialFoodTexture = new Texture(selectedFoods.get(1).texturePath);
         goldenFoodTexture = new Texture(selectedFoods.get(2).texturePath);
@@ -223,8 +224,11 @@ public class GameScreen implements Screen {
         //endregion
 
         //region Drawboard
-        TextureRegionDrawable cell_1 = new TextureRegionDrawable(new TextureRegion(new Texture("backgrounds\\gridtile1.png")));
-        TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture("backgrounds\\gridtile2.png")));
+        this.selectedLayout = selectedLayout;
+//        TextureRegionDrawable cell_1 = new TextureRegionDrawable(new TextureRegion(new Texture("backgrounds\\layouts\\gridtile1.png")));
+//        TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture("backgrounds\\layouts\\gridtile2.png")));
+        TextureRegionDrawable cell_1 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath1)));
+        TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath2)));
 
         boardTable = new Table();
 

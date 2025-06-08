@@ -16,10 +16,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Slider;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
@@ -68,11 +65,9 @@ public class SnakeGame extends Game {
     }
 
     private Difficulty currentDifficulty = Difficulty.MEDIUM;
-
     public Difficulty getCurrentDifficulty() {
         return currentDifficulty;
     }
-
     public void setCurrentDifficulty(Difficulty difficulty) {
         this.currentDifficulty = difficulty;
     }
@@ -100,7 +95,7 @@ public class SnakeGame extends Game {
         }
         clicking = Gdx.audio.newSound(Gdx.files.internal("sounds\\clicking.mp3"));
         clicking.play(2f);
-        
+
         // Load food eating sounds
         normalFoodSound = Gdx.audio.newSound(Gdx.files.internal("sounds\\normal_food.mp3"));
         specialFoodSound = Gdx.audio.newSound(Gdx.files.internal("sounds\\special_food.mp3"));
@@ -255,6 +250,17 @@ public class SnakeGame extends Game {
     // Getter for sfx volume
     public float getSfxVolume() {
         return sfxVolume;
+    }
+
+    public void dialogTextAnimation(Label text, boolean before){
+        if(before){
+            text.setFontScale(1.1f);
+            text.setVisible(false);
+        } else {
+            text.setVisible(true);
+            text.getColor().a = 0;
+            text.addAction(Actions.fadeIn(0.5f));
+        }
     }
 
     private static Vector2 getViewportSize(){
