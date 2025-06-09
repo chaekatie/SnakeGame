@@ -12,6 +12,7 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
+import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
@@ -19,9 +20,9 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class MenuScreen implements Screen {
-    private Texture mainBg, logout, login;
+    private Texture mainBg, logout, login, avatar;
     private Image baseBg, avatarImage;
-    private ImageButton play, leader, prize, setting, about, logoutBtn, loginBtn;
+    private ImageButton play, leader, prize, setting, about, logoutBtn, loginBtn, avatarBtn;
     private SnakeGame game;
     private Stage stage;
     private Viewport viewport;
@@ -40,6 +41,8 @@ public class MenuScreen implements Screen {
         baseBg = new Image(mainBg);
         game.appearTransition(baseBg);
         stage.addActor(baseBg);
+
+        System.out.println("LOGGED IN (MENU): " + isLoggedIn);
 
         //region Play button
         playButton = new Texture("buttons\\play2.png");
@@ -196,9 +199,10 @@ public class MenuScreen implements Screen {
         });
         //endregion
 
-        //region Logout buttons for logged-in users
+        //region Logout button for logged-in users
         logout = new Texture("buttons\\logout.png");
         logoutBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(logout)));
+        logoutBtn.setSize(250, 250);
         game.buttonAnimation(logoutBtn);
         logoutBtn.addListener(new ClickListener() {
             @Override
@@ -209,19 +213,16 @@ public class MenuScreen implements Screen {
             }
         });
         logoutBtn.setPosition(
-            baseBg.getX() + 580,
-            baseBg.getY()
+            baseBg.getX() + 480, baseBg.getY()
         );
-        if(isLoggedIn) {
-            stage.addActor(logoutBtn);
-        }
         //endregion
 
         //region Login button for anoymous user
         login = new Texture("buttons\\login.png");
-        loginBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(logout)));
+        loginBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(login)));
+        loginBtn.setSize(120, 180);
         game.buttonAnimation(loginBtn);
-        logoutBtn.addListener(new ClickListener() {
+        loginBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
@@ -230,12 +231,37 @@ public class MenuScreen implements Screen {
             }
         });
         loginBtn.setPosition(
-            baseBg.getX() + 580,
-            baseBg.getY()
+            baseBg.getX() + 580, baseBg.getY()
         );
-        if(!isLoggedIn) {
-            stage.addActor(loginBtn);
-        }
+        //endregion
+
+        //region Avatar button for logged-in users
+        avatar = game.getChosenAvatar();
+        avatarBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(avatar)));
+        game.buttonAnimation(avatarBtn);
+        avatarBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.clicking.play(2f);
+                game.setScreen(new SettingScreen(game));
+            }
+        });
+        avatarBtn.setPosition(
+            baseBg.getX() + 60, baseBg.getY() + 50
+        );
+
+        Table borderWrapper = new Table();
+        borderWrapper.setSize(160, 160); // slightly bigger than ScrollPane
+        borderWrapper.setBackground(new TextureRegionDrawable(new TextureRegion(new Texture("avatars\\whiteframe.jpg"))));
+        borderWrapper.add(avatarBtn).center();
+        borderWrapper.setPosition(500, baseBg.getY() + 1050);
+        borderWrapper.addAction(Actions.forever(
+            Actions.sequence(
+                Actions.moveBy(0, 10, 0.4f),
+                Actions.moveBy(0, -10, 0.4f)
+            )
+        ));
+        stage.addActor(borderWrapper);
         //endregion
 
         stage.addActor(play);
@@ -243,6 +269,11 @@ public class MenuScreen implements Screen {
         stage.addActor(leader);
         stage.addActor(setting);
         stage.addActor(about);
+        if(isLoggedIn) {
+            stage.addActor(logoutBtn);
+        } else {
+            stage.addActor(loginBtn);
+        }
     }
 
     public void setAvatarImage(String image){

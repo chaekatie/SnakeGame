@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -58,5 +59,30 @@ public class ScoreController {
     public List<UserHighScore> getHighScores() {
         return scoreRepository.findHighScoresGroupByUser();
     }
+
+    @GetMapping("/filter")
+    public ResponseEntity<List<UserHighScore>> getScoresByTimeRange(@RequestParam("type") String type) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate;
+
+        switch (type.toLowerCase()) {
+            case "week":
+                startDate = now.with(DayOfWeek.MONDAY).toLocalDate().atStartOfDay(); // đầu tuần
+                break;
+            case "month":
+                startDate = now.withDayOfMonth(1).toLocalDate().atStartOfDay(); // đầu tháng
+                break;
+            default:
+                return ResponseEntity.badRequest().build(); // tham số không hợp lệ
+        }
+
+        System.out.println("Start: " + startDate);
+        System.out.println("Now: " + now);
+
+        List<UserHighScore> scores = scoreRepository.findScoresByDateRange(startDate, now);
+        System.out.println("Returning scores: " + scores.size());
+        return ResponseEntity.ok(scores);
+    }
+
 
 }

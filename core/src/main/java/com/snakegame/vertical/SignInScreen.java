@@ -151,6 +151,8 @@ public class SignInScreen implements Screen {
                         game.setLoggedIn(GameApi.getLoginFlag());
                         successDialog.show(stage);
                         System.out.println("Login success. Token: " + token);
+                        game.setUsername(user);
+
                         Gdx.app.postRunnable(() -> {
                             dialogTextAnimation(successMessage, false);
                             dialogTextAnimation(moveMessage, false);

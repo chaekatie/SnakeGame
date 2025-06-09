@@ -13,6 +13,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeType;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
@@ -24,6 +25,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Random;
 
 //java -jar gdx-liftoff-1.13.1.3.jar
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
@@ -48,6 +50,10 @@ public class SnakeGame extends Game {
     public Slider.SliderStyle customSliderStyle;
     public DateTimeFormatter formatter;
 
+    private String username;
+    public void setUsername(String username) { this.username = username; }
+    public String getUsername() { return this.username; }
+
     private boolean isLoggedIn = false;
     public boolean getLoggedIn(){ return this.isLoggedIn; }
     public void setLoggedIn(boolean isLoggedIn) { this.isLoggedIn = isLoggedIn; }
@@ -56,6 +62,11 @@ public class SnakeGame extends Game {
     private float sfxVolume;
     private float musicVolume;
     public long hissLoopId = -1;
+
+    public Texture[] avatarsTexture;
+    private Texture chosenAvatar;
+    public void setChosenAvatar(Texture chosenAvatar) { this.chosenAvatar = chosenAvatar; }
+    public Texture getChosenAvatar() { return this.chosenAvatar; }
 
     // region Add difficulty-related fields
     public enum Difficulty {
@@ -89,7 +100,23 @@ public class SnakeGame extends Game {
         backgroundMusic.setVolume(0.2f);
         backgroundMusic.play();
 
-        formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm a");
+        formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm:ss a");
+        avatarsTexture = new Texture[]{
+            new Texture("avatars\\ava1.png"),
+            new Texture("avatars\\ava2.png"),
+            new Texture("avatars\\ava3.png"),
+            new Texture("avatars\\ava4.png"),
+            new Texture("avatars\\ava5.png"),
+            new Texture("avatars\\ava6.png"),
+            new Texture("avatars\\ava7.png"),
+            new Texture("avatars\\ava8.png"),
+            new Texture("avatars\\ava9.png"),
+            new Texture("avatars\\ava10.png"),
+            new Texture("avatars\\ava11.png"),
+            new Texture("avatars\\ava12.png")
+        };
+        chosenAvatar = avatarsTexture[MathUtils.random(avatarsTexture.length - 1)];
+        setChosenAvatar(chosenAvatar);
 
         // Load preferences
         Preferences prefs = Gdx.app.getPreferences("MySnakeGamePreferences");
@@ -161,6 +188,7 @@ public class SnakeGame extends Game {
 
         setScreen(new FirstScreen(this));
     }
+
     public void imageAnimation (Image randomImage)
     {
         randomImage.addAction(Actions.forever(
