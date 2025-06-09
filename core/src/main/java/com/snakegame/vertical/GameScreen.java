@@ -15,10 +15,7 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
-import com.badlogic.gdx.scenes.scene2d.ui.Stack;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
@@ -27,8 +24,11 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.utils.Align;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.ArrayList;
@@ -36,36 +36,39 @@ import java.util.HashSet;
 
 public class GameScreen implements Screen {
     private final SnakeGame game;
-    private Texture gridTile, backgroundTexture;
     private Image backgroundImage;
     private Viewport viewport;
     private Stage stage;
     private SpriteBatch batch;
+
     private final int rows = 20;
     private final int cols = 20;
     private int cellSize = 32;
-    private Table boardTable, topBarTable;
-    private Texture foodTexture, cupTexture, pauseTexture;
-    private Texture resetTexture, soundOnTexture, soundOffTexture;
-    private Image foodImage, cupImage;
-    private ImageButton pauseButton, resetButton, soundOnButton, soundOffButton;
-    private int hasSound;
-    private Array<FoodType> selectedFoods;
-    private LayoutType selectedLayout;
-
-    private Texture snakeHeadTexture, snakeBodyTexture;
-    private Texture normalFoodTexture, specialFoodTexture, goldenFoodTexture;
-    private Texture snakeTailTexture;
-    private Texture snakeCornerTexture;
-    private Sprite headSprite, bodySprite, tailSprite, cornerSprite;
-    private GameStateDTO currentGameState;
     private float updateTimer = 0;
     private static final float UPDATE_INTERVAL = 0.15f; // Snake speed
     private float directionChangeCooldown = 0;
     private static final float DIRECTION_CHANGE_COOLDOWN = 0.05f; // Cooldown between direction changes
-    private Label scoreLabel;
+
+    private Table boardTable, topBarTable;
+    private Texture resetTexture, soundOnTexture, soundOffTexture, pauseTexture, backgroundTexture;
+    private ImageButton pauseButton, resetButton, soundOnButton, soundOffButton;
+    private Array<FoodType> selectedFoods;
+    private LayoutType selectedLayout;
+    private Skin skin;
+    private Label normalLabel, specialLabel, goldenLabel;
+    private int eatenNormal, eatenSpecial, eatenGolden;
+    private LocalDateTime startTime, endTime;
+
+    private Texture snakeHeadTexture, snakeBodyTexture, snakeTailTexture, snakeCornerTexture;
+    private Texture normalFoodTexture, specialFoodTexture, goldenFoodTexture;
+    private Sprite headSprite, bodySprite, tailSprite, cornerSprite;
+    private GameStateDTO currentGameState;
+
+    private Label scoreLabel, startTimeLabel, scoreMessage, playtimeMessage, detailsScoreMessage;
     private BitmapFont font;
-    private boolean isPaused = false; // Add pause state flag
+    private boolean isPaused = false, isLoggedIn; // Add pause state flag
+    private Dialog gameOverDialog, announcingDialog;
+    private DateTimeFormatter formatter;
 
     // Add animation timers for food effects
     private float specialFoodTimer = 0;
@@ -75,12 +78,26 @@ public class GameScreen implements Screen {
 
     public GameScreen(SnakeGame game, Array<FoodType> selectedFoods, LayoutType selectedLayout){
         this.game = game;
-        this.selectedFoods = selectedFoods;
         OrthographicCamera camera = new OrthographicCamera();
-        //gridTile = new Texture("backgrounds\\gridtile1.png");
         batch = new SpriteBatch();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, batch);
+        skin = new Skin(Gdx.files.internal("uiskin.json"));
+
+        this.isLoggedIn = game.getLoggedIn();
+        this.formatter = game.formatter;
+        this.selectedFoods = selectedFoods;
+        this.selectedLayout = selectedLayout;
+        eatenNormal = eatenSpecial = eatenGolden = 0;
+
+        Texture dialogTex = new Texture("backgrounds\\table.png");
+        TextureRegionDrawable dialogDrawble = new TextureRegionDrawable(new TextureRegion(dialogTex));
+
+        Label.LabelStyle customLabel = new Label.LabelStyle();
+        customLabel.font = game.theSmallFont;
+
+        Label.LabelStyle customLabel1 = new Label.LabelStyle();
+        customLabel1.font = game.theBigFont;
 
         // Initialize with empty game state
         currentGameState = new GameStateDTO();
@@ -88,12 +105,16 @@ public class GameScreen implements Screen {
         currentGameState.foods = new ArrayList<>();
         currentGameState.score = 0;
 
-        backgroundTexture = new Texture("backgrounds\\bgempty.png");
+        //region Background
+        backgroundTexture = new Texture("backgrounds\\bgempty1.png");
         TextureRegionDrawable background = new TextureRegionDrawable(new TextureRegion(backgroundTexture));
         backgroundImage = new Image(background);
         game.appearTransition(backgroundImage);
         stage.addActor(backgroundImage);
+        backgroundImage.toBack();
+        //endregion
 
+        //region Textures and Sprites
         // Load snake textures
         snakeHeadTexture = new Texture("snake/head.png");
         snakeBodyTexture = new Texture("snake/body.png");
@@ -119,6 +140,97 @@ public class GameScreen implements Screen {
         normalFoodTexture = new Texture(selectedFoods.get(0).texturePath);
         specialFoodTexture = new Texture(selectedFoods.get(1).texturePath);
         goldenFoodTexture = new Texture(selectedFoods.get(2).texturePath);
+        //endregion
+
+        //region Draw Board
+        TextureRegionDrawable cell_1 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath1)));
+        TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath2)));
+        boardTable = new Table();
+
+        // Calculate the total board size
+        float totalBoardWidth = cols * cellSize;
+        float totalBoardHeight = rows * cellSize;
+        // Center the board on screen
+        float boardX = (game.V_WIDTH - totalBoardWidth) / 2f;
+        float boardY = (game.V_HEIGHT - totalBoardHeight) / 2f;
+
+        boardX += -15f;
+        boardTable.setPosition(boardX, boardY);
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                Image cell = new Image((row + col) % 2 == 0 ? cell_1 : cell_2);
+                boardTable.add(cell).size(cellSize, cellSize);
+            }
+            boardTable.row();
+        }
+
+        boardTable.pack();
+        boardTable.setPosition(boardX, boardY);
+        stage.addActor(boardTable);
+        //endregion
+
+        //region GameOver Dialog
+        gameOverDialog = new Dialog("GAME OVER", skin) {
+            @Override
+            protected void result(Object object) {
+            if (object.equals("restart")) {
+                resetGame();
+            } else {
+                game.setScreen(new MenuScreen(game)); // or false based on login
+            }
+        }
+        };
+
+        gameOverDialog.getContentTable().setBackground(dialogDrawble);
+        Label message1 = new Label("YOU LOST!",customLabel);
+        Label message2 = new Label("What would you like to do now?", customLabel);
+        scoreMessage = new Label("Total Score: 0", customLabel);
+        //detailsScoreMessage = new Label(selectedFoods.get(0) + "", customLabel);
+        playtimeMessage = new Label("Playing time: ", customLabel);
+        gameOverDialog.text(message1).center();
+        gameOverDialog.getContentTable().row();
+        gameOverDialog.text(scoreMessage).center();
+        gameOverDialog.getContentTable().row();
+//        gameOverDialog.text(detailsScoreMessage);
+//        gameOverDialog.getContentTable().row();
+        gameOverDialog.text(playtimeMessage).center();
+        gameOverDialog.getContentTable().row();
+        gameOverDialog.text(message2).center();
+        gameOverDialog.getContentTable().row();
+
+        gameOverDialog.button("Play Again", "restart");
+        gameOverDialog.button("Back to Menu", "menu");
+        //endregion
+
+        //region Announcing Dialog
+        announcingDialog = new Dialog("ATTENTION", skin) {
+            @Override
+            protected void result(Object object) {
+                if (object.equals("restart")) {
+                    resetGame();
+                } else if(object.equals("continue")) {
+                    isPaused = !isPaused; // Toggle pause state
+                } else {
+                    game.setScreen(new MenuScreen(game));
+                }
+            }
+        };
+
+        announcingDialog.getContentTable().setBackground(dialogDrawble);
+        Label message_1 = new Label("YOU HAS PAUSED THE GAME!",customLabel);
+        Label message_2 = new Label("What would you like to do now?", customLabel);
+        Label message_3 = new Label("If you restart, this match won't be save!", customLabel);
+        announcingDialog.text(message_1);
+        announcingDialog.getContentTable().row();
+        announcingDialog.text(message_2);
+        announcingDialog.getContentTable().row();
+        announcingDialog.text(message_3);
+
+        announcingDialog.button("Continue Playing", "continue");
+        announcingDialog.button("Restart the match", "restart");
+        announcingDialog.button("Back to menu", "menu");
+        //endregion
 
         //region Top bar
         topBarTable = new Table();
@@ -182,24 +294,7 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(3f);
                 // Reset game state
-                GameApi.resetGame(new GameApi.GameStateCallback() {
-                    @Override
-                    public void onSuccess(GameStateDTO gameState) {
-                        if (gameState == null) {
-                            Gdx.app.error("GameScreen", "resetGame: Received null gameState from backend!");
-                            return;
-                        }
-                        currentGameState = gameState;
-                        updateScoreLabel();
-                        isPaused = false;
-                        Gdx.app.log("GameScreen", "Game reset successful. New snake size: " +
-                            (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
-                    }
-                    @Override
-                    public void onError(Throwable t) {
-                        Gdx.app.error("GameScreen", "Error resetting game", t);
-                    }
-                });
+                resetGame();
             }
         });
 
@@ -209,6 +304,7 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(3f);
                 isPaused = !isPaused; // Toggle pause state
+                announcingDialog.show(stage);
             }
         });
 
@@ -216,60 +312,78 @@ public class GameScreen implements Screen {
         soundBtnStack.add(soundOffButton);
         soundBtnStack.add(soundOnButton);
 
-        topBarTable.top().padTop(100);
-        topBarTable.add(pauseButton).pad(10).left();
-        topBarTable.add(resetButton).pad(10).center();
-        topBarTable.add(soundBtnStack).pad(10).right();
+        topBarTable.top().padTop(120);
+        topBarTable.add(pauseButton).pad(60, 10, 10, 10).left();
+        topBarTable.add(resetButton).pad(60, 10, 10, 10).center();
+        topBarTable.add(soundBtnStack).pad(60,10,10,10).right();
         stage.addActor(topBarTable);
-        //endregion
-
-        //region Drawboard
-        this.selectedLayout = selectedLayout;
-//        TextureRegionDrawable cell_1 = new TextureRegionDrawable(new TextureRegion(new Texture("backgrounds\\layouts\\gridtile1.png")));
-//        TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture("backgrounds\\layouts\\gridtile2.png")));
-        TextureRegionDrawable cell_1 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath1)));
-        TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath2)));
-
-        boardTable = new Table();
-
-        // Calculate the total board size
-        float totalBoardWidth = cols * cellSize;
-        float totalBoardHeight = rows * cellSize;
-
-        // Center the board on screen
-        float boardX = (game.V_WIDTH - totalBoardWidth) / 2f;
-        float boardY = (game.V_HEIGHT - totalBoardHeight) / 2f;
-
-        boardTable.setPosition(boardX, boardY);
-
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                Image cell = new Image((row + col) % 2 == 0 ? cell_1 : cell_2);
-                boardTable.add(cell).size(cellSize, cellSize);
-            }
-            boardTable.row();
-        }
-
-        boardTable.pack();
-
-        boardTable.setPosition(
-        		boardX,
-        		boardY
-        	);
-
-        stage.addActor(boardTable);
-        //endregion
 
         // Create score label
         font = new BitmapFont();
         font.getData().setScale(2);
-        scoreLabel = new Label("Score: 0", new Label.LabelStyle(font, Color.WHITE));
+        scoreLabel = new Label("SCORE: 0", customLabel1);
         scoreLabel.setAlignment(Align.center);
-        scoreLabel.setPosition(game.V_WIDTH / 2 - scoreLabel.getPrefWidth()/2, game.V_HEIGHT - 80);
+        scoreLabel.setPosition(game.V_WIDTH / 2 - scoreLabel.getPrefWidth()/2, game.V_HEIGHT -  150);
         stage.addActor(scoreLabel);
+        //endregion
+
+        // region Down Bar
+        Image normalFood = new Image(new TextureRegionDrawable(new TextureRegion(normalFoodTexture)));
+        normalFood.setScale(1f);
+        Image specialFood = new Image(new TextureRegionDrawable(new TextureRegion(specialFoodTexture)));
+        specialFood.setScale(1f);
+        Image goldenFood = new Image(new TextureRegionDrawable(new TextureRegion(goldenFoodTexture)));
+        goldenFood.setScale(1f);
+
+        normalLabel = new Label("(10): 0", customLabel1);
+        specialLabel = new Label("(20): 0", customLabel1);
+        goldenLabel = new Label("(30): 0", customLabel1);
+
+        Table eatenFoodsTable = new Table();
+        eatenFoodsTable.add(normalFood).padRight(10);
+        eatenFoodsTable.add(normalLabel).padRight(40);
+        eatenFoodsTable.add(specialFood).padRight(10);
+        eatenFoodsTable.add(specialLabel).padRight(40);
+        eatenFoodsTable.add(goldenFood).padRight(10);
+        eatenFoodsTable.add(goldenLabel).row();
+        eatenFoodsTable.pack();
+        eatenFoodsTable.setPosition(backgroundImage.getX() + 20, backgroundImage.getY() + 200);
+        stage.addActor(eatenFoodsTable);
+
+        // Time tracking label
+        startTimeLabel = new Label("Start time: hh:mm:ss dd-mm-yy", customLabel);
+        startTimeLabel.setPosition(backgroundImage.getX(), backgroundImage.getY() + 100);
+        stage.addActor(startTimeLabel);
+        //endregion
 
         // Initial game state fetch
         fetchGameState();
+    }
+
+    private void resetGame() {
+        GameApi.resetGame(new GameApi.GameStateCallback() {
+            @Override
+            public void onSuccess(GameStateDTO gameState) {
+                if (gameState == null) {
+                    Gdx.app.error("GameScreen", "resetGame: Received null gameState from backend!");
+                    return;
+                }
+                currentGameState = gameState;
+                updateScoreLabel();
+                startTime = LocalDateTime.now();
+                startTimeLabel.setText("Start time: " + startTime.format(formatter));
+                System.out.println("START TIME: "+ startTime);
+
+                isPaused = false;
+                Gdx.app.log("GameScreen", "Game reset successful. New snake size: " +
+                    (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                Gdx.app.error("GameScreen", "Error resetting game", t);
+            }
+        });
     }
 
     private void fetchGameState() {
@@ -282,6 +396,13 @@ public class GameScreen implements Screen {
                 }
                 currentGameState = gameState;
                 updateScoreLabel();
+
+                if (startTime == null && !gameState.gameOver) {
+                    startTime = LocalDateTime.now();
+                    startTimeLabel.setText("Start time: " + startTime.format(formatter));
+                    System.out.println("START TIME: "+ startTime);
+                }
+
                 Gdx.app.log("GameScreen", "Game state fetched successfully. Snake size: " +
                     (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
             }
@@ -294,7 +415,7 @@ public class GameScreen implements Screen {
 
     private void updateScoreLabel() {
         if (currentGameState != null) {
-            scoreLabel.setText("Score: " + currentGameState.score);
+            scoreLabel.setText("SCORE: " + currentGameState.score);
         }
     }
 
@@ -325,7 +446,6 @@ public class GameScreen implements Screen {
         stage.act(v);
         stage.draw();
 
-        // Draw game objects
         drawGameObjects();
     }
 
@@ -355,12 +475,18 @@ public class GameScreen implements Screen {
                             switch (oldFood.type) {
                                 case NORMAL:
                                     game.normalFoodSound.play(game.getSfxVolume());
+                                    eatenNormal++;
+                                    normalLabel.setText("(10): " + eatenNormal);
                                     break;
                                 case SPECIAL:
                                     game.specialFoodSound.play(game.getSfxVolume());
+                                    eatenSpecial++;
+                                    specialLabel.setText("(20): " + eatenSpecial);
                                     break;
                                 case GOLDEN:
                                     game.goldenFoodSound.play(game.getSfxVolume());
+                                    eatenGolden++;
+                                    goldenLabel.setText("(30): " + eatenGolden);
                                     break;
                             }
                             break;
@@ -370,6 +496,7 @@ public class GameScreen implements Screen {
 
                 currentGameState = gameState;
                 updateScoreLabel();
+
                 Gdx.app.log("GameScreen", "Game updated successfully:");
                 Gdx.app.log("GameScreen", "- Snake size: " +
                     (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
@@ -379,6 +506,20 @@ public class GameScreen implements Screen {
                 }
                 Gdx.app.log("GameScreen", "- Score: " + gameState.score);
                 Gdx.app.log("GameScreen", "- Game Over: " + gameState.gameOver);
+
+                if (gameState.gameOver) {
+                    isPaused = true;
+                    endTime = LocalDateTime.now();
+
+                    long minutes = ChronoUnit.MINUTES.between(startTime, endTime);
+                    long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
+                    long hours = ChronoUnit.HOURS.between(startTime, endTime);
+
+                    System.out.println("END TIME: " + endTime);
+                    gameOverDialog.show(stage);
+                    scoreMessage.setText("Total scores: " + gameState.score);
+                    playtimeMessage.setText("Playing time: " + hours + "h: " + minutes + "m: " + seconds + "s");
+                }
             }
             @Override
             public void onError(Throwable t) {
@@ -438,6 +579,64 @@ public class GameScreen implements Screen {
         Gdx.input.setInputProcessor(stage);
     }
 
+    private void drawBoard(){
+//        TextureRegionDrawable cell_1 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath1)));
+//        TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath2)));
+//
+//        boardTable = new Table();
+//
+//        // Calculate the total board size
+//        float totalBoardWidth = cols * cellSize;
+//        float totalBoardHeight = rows * cellSize;
+//
+//        // Center the board on screen
+//        float boardX = (game.V_WIDTH - totalBoardWidth) / 2f;
+//        float boardY = (game.V_HEIGHT - totalBoardHeight) / 2f;
+//
+//        boardTable.setPosition(boardX, boardY);
+//
+//        for (int row = 0; row < rows; row++) {
+//            for (int col = 0; col < cols; col++) {
+//                Image cell = new Image((row + col) % 2 == 0 ? cell_1 : cell_2);
+//                boardTable.add(cell).size(cellSize, cellSize);
+//            }
+//            boardTable.row();
+//        }
+//
+//        boardTable.pack();
+//
+//        boardTable.setPosition(
+//            boardX,
+//            boardY
+//        );
+
+        Texture layoutTex1 = new Texture(selectedLayout.texturePath1);
+        Texture layoutTex2 = new Texture(selectedLayout.texturePath2);
+        TextureRegion cellRegion1 = new TextureRegion(layoutTex1);
+        TextureRegion cellRegion2 = new TextureRegion(layoutTex2);
+
+        batch.setProjectionMatrix(stage.getCamera().combined);
+        batch.begin();
+
+        float boardX = (game.V_WIDTH - cols * cellSize) / 2f;
+        float boardY = (game.V_HEIGHT - rows * cellSize) / 2f;
+
+        boardTable = new Table();
+        boardTable.setPosition(boardX, boardY);
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                float x = boardX + col * cellSize;
+                float y = boardY + row * cellSize;
+
+                TextureRegion region = ((row + col) % 2 == 0) ? cellRegion1 : cellRegion2;
+                batch.draw(region, x, y, cellSize, cellSize);
+            }
+        }
+
+        boardTable.setPosition(boardX, boardY);
+        batch.end();
+    }
 
     private void drawGameObjects() {
         if (currentGameState == null) {
@@ -626,7 +825,6 @@ public class GameScreen implements Screen {
         if (dy == -1) return "DOWN";
         return "NONE";
     }
-
 
     private Texture getFoodTexture(GameStateDTO.FoodType type) {
         switch (type) {

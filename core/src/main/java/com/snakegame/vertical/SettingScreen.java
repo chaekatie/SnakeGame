@@ -39,13 +39,13 @@ public class SettingScreen implements Screen {
     private Label selected;
     private boolean isLoggedin;
 
-    public SettingScreen(SnakeGame game, boolean isLoggedIn){
+    public SettingScreen(SnakeGame game){
         this.game = game;
         OrthographicCamera camera = new OrthographicCamera();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, game.batch);
         Gdx.input.setInputProcessor(stage);
-        this.isLoggedin = isLoggedIn;
+        this.isLoggedin = game.getLoggedIn();
 
         mainBg = new Texture("backgrounds\\emptybg.png");
         background = new Image(mainBg);
@@ -169,7 +169,7 @@ public class SettingScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
-                game.setScreen(new MenuScreen(game, isLoggedIn));
+                game.setScreen(new MenuScreen(game));
             }
         });
         stage.addActor(backButton);

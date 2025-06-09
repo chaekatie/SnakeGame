@@ -31,9 +31,11 @@ public class LeaderScreen implements Screen {
     private Label.LabelStyle customLabel;
     private Skin skin;
     private Table rowsTable;
+    private boolean isLoggedIn;
 
-    public LeaderScreen(SnakeGame game, boolean isLoggedIn){
+    public LeaderScreen(SnakeGame game){
         this.game = game;
+        this.isLoggedIn = game.getLoggedIn();
         OrthographicCamera camera = new OrthographicCamera();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, game.batch);
@@ -72,28 +74,27 @@ public class LeaderScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
-                game.setScreen(new MenuScreen(game, isLoggedIn));
+                game.setScreen(new MenuScreen(game));
             }
         });
         stage.addActor(backButton);
         //endregion
 
         //region Scores Table for leaderboard
-        rowsTable.top();
-
         float widthh = boardImage.getPrefWidth();
         float heightt = boardImage.getPrefWidth();
 
         ScrollPane scrollPane = declareScrollPane(rowsTable, widthh - 40, heightt - 150);
-        scrollContainer.add(scrollPane).size(widthh - 40, heightt - 150).pad(80, -30, 50, 20);
+        scrollContainer.add(scrollPane).size(widthh - 40, heightt - 150).pad(0, -30, 50, 20);
 
         boardStack.add(boardImage);
         boardStack.setSize(widthh - 40, heightt - 120);
         boardStack.add(scrollContainer);
 
         allScoresTable.setFillParent(true);
-        stage.addActor(allScoresTable);
         allScoresTable.add(boardStack).pad(0, 10, 10, 5);
+        stage.addActor(allScoresTable);
+        allScoresTable.setY(allScoresTable.getY() + 70);
         //endregion
 
         //region Leaderboard logo
@@ -150,6 +151,8 @@ public class LeaderScreen implements Screen {
         filterBtn.setPosition(backgroundImage.getX() + 600, backgroundImage.getY() + 700);
         stage.addActor(filterBtn);
         //endregion
+
+        stage.setDebugAll(true);
     }
 
     public ScrollPane declareScrollPane(Table table, float width, float height){

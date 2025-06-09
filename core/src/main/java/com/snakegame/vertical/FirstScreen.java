@@ -40,14 +40,10 @@ public class FirstScreen implements Screen {
         stage = new Stage(viewport, game.batch);
         skin = new Skin(Gdx.files.internal("uiskin.json"));
         Gdx.input.setInputProcessor(stage);
-        isLoggedIn = GameApi.getLoginFlag();
 
         Label.LabelStyle customLabel = new Label.LabelStyle();
         customLabel.font = game.theSmallFont;
         customLabel.fontColor = Color.BLACK;
-
-        // Create difficulty selection dialog
-        //createDifficultyDialog();
 
         //region Background
         backgroundTexture = new Texture("backgrounds\\mainbg.png");
@@ -145,7 +141,7 @@ public class FirstScreen implements Screen {
                             Actions.run(() -> anoymousButton.addAction(Actions.moveBy(500, 0, 0.5f)))
                         ),
                         Actions.run(() -> {
-                            game.setScreen(new MenuScreen(game, isLoggedIn));
+                            game.setScreen(new MenuScreen(game));
                         })
                     ));
                 } else {
@@ -157,8 +153,8 @@ public class FirstScreen implements Screen {
 
         Label message1 = new Label("Continue without saving data?", customLabel);
         Label message2 = new Label("You can sign up later to keep your progress.", customLabel);
-        dialogTextAnimation(message1, false);
-        dialogTextAnimation(message2, false);
+        game.dialogTextAnimation(message1, false);
+        game.dialogTextAnimation(message2, false);
         warningDialog.text(message1);
         warningDialog.getContentTable().row();
         warningDialog.text(message2);
@@ -178,43 +174,10 @@ public class FirstScreen implements Screen {
         stage.addActor(anoymousButton);
         //endregion
     }
-/*
-    private void createDifficultyDialog() {
-        String[] options = {"EASY", "MEDIUM", "HARD"};
-        int choice = JOptionPane.showOptionDialog(null,
-            "Select Difficulty",
-            "Difficulty Selection",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            options,
-            options[1]); // Default to MEDIUM
 
-        if (choice != JOptionPane.CLOSED_OPTION) {
-            game.setCurrentDifficulty(SnakeGame.Difficulty.valueOf(options[choice]));
-        } else {
-            // If user closes dialog, default to MEDIUM
-            game.setCurrentDifficulty(SnakeGame.Difficulty.MEDIUM);
-        }
-    }
-*/
-    public void dialogTextAnimation(Label text, boolean before){
-        if(before){
-            text.setFontScale(1.1f);
-            text.setVisible(false);
-        } else {
-            text.setVisible(true);
-            text.getColor().a = 0;
-            text.addAction(Actions.fadeIn(0.4f));
-        }
-    }
 
     @Override
     public void show() {
-// Show difficulty dialog when screen is shown
-//            if (difficultyDialog != null) {
-//                difficultyDialog.show(stage);
-//        }
     }
 
     @Override

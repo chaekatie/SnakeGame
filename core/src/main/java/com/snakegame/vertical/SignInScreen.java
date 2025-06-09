@@ -148,6 +148,7 @@ public class SignInScreen implements Screen {
                     @Override
                     public void onSuccess(String token) {
                         loginSuccessful = true;
+                        game.setLoggedIn(GameApi.getLoginFlag());
                         successDialog.show(stage);
                         System.out.println("Login success. Token: " + token);
                         Gdx.app.postRunnable(() -> {
@@ -158,7 +159,7 @@ public class SignInScreen implements Screen {
                                 @Override
                                 public void run() {
                                     successDialog.hide();
-                                    game.setScreen(new MenuScreen(game, loginSuccessful));
+                                    game.setScreen(new MenuScreen(game));
                                 }
                             }, 1f);
                         });

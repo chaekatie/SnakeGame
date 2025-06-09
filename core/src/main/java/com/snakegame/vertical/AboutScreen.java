@@ -33,14 +33,14 @@ public class AboutScreen implements Screen {
     private OrthographicCamera camera;
     private boolean isLoggedIn;
 
-    public AboutScreen(SnakeGame game, boolean isLoggedIn){
+    public AboutScreen(SnakeGame game){
         this.game = game;
         camera = new OrthographicCamera();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, game.batch);
         Skin skin = new Skin(Gdx.files.internal("uiskin.json"));
         Gdx.input.setInputProcessor(stage);
-        this.isLoggedIn = isLoggedIn;
+        this.isLoggedIn = game.getLoggedIn();
 
         //region Background and Main logo
         background = new Texture("backgrounds\\emptybg.png");
@@ -54,7 +54,7 @@ public class AboutScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
-                game.setScreen(new MenuScreen(game, isLoggedIn));
+                game.setScreen(new MenuScreen(game));
             }
         });
         stage.addActor(backButton);

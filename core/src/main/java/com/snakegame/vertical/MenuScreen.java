@@ -28,13 +28,13 @@ public class MenuScreen implements Screen {
     private Texture playButton, prizeButton, leaderButton, settingButton, aboutButton, avatarTexture;
     private boolean isLoggedIn;
 
-    public MenuScreen(SnakeGame game, boolean isLoggedIn){
+    public MenuScreen(SnakeGame game){
         this.game = game;
         OrthographicCamera camera = new OrthographicCamera();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
         stage = new Stage(viewport, game.batch);
         Gdx.input.setInputProcessor(stage);
-        this.isLoggedIn = isLoggedIn;
+        this.isLoggedIn = game.getLoggedIn();
 
         mainBg = new Texture("backgrounds\\menubg.jpg");
         baseBg = new Image(mainBg);
@@ -65,7 +65,7 @@ public class MenuScreen implements Screen {
                         Actions.run(() -> play.addAction(Actions.moveBy(500, 0, 0.5f)))
                     ),
                     Actions.run(() -> {
-                        game.setScreen(new GameSettings(game, isLoggedIn));
+                        game.setScreen(new GameSettings(game));
                     })
                 ));
             }
@@ -127,7 +127,7 @@ public class MenuScreen implements Screen {
                         Actions.run(() -> leader.addAction(Actions.moveBy(500, 0, 0.5f)))
                     ),
                     Actions.run(() -> {
-                        game.setScreen(new LeaderScreen(game, isLoggedIn));
+                        game.setScreen(new LeaderScreen(game));
                     })
                 ));
             }
@@ -158,7 +158,7 @@ public class MenuScreen implements Screen {
                         Actions.run(() -> setting.addAction(Actions.moveBy(500, 0, 0.5f)))
                     ),
                     Actions.run(() -> {
-                        game.setScreen(new SettingScreen(game, isLoggedIn));
+                        game.setScreen(new SettingScreen(game));
                     })
                 ));
             }
@@ -189,7 +189,7 @@ public class MenuScreen implements Screen {
                         Actions.run(() -> about.addAction(Actions.moveBy(500, 0, 0.5f)))
                     ),
                     Actions.run(() -> {
-                        game.setScreen(new AboutScreen(game, isLoggedIn));
+                        game.setScreen(new AboutScreen(game));
                     })
                 ));
             }

@@ -23,6 +23,8 @@ import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import java.time.format.DateTimeFormatter;
+
 //java -jar gdx-liftoff-1.13.1.3.jar
 /** {@link com.badlogic.gdx.ApplicationListener} implementation shared by all platforms. */
 public class SnakeGame extends Game {
@@ -44,14 +46,18 @@ public class SnakeGame extends Game {
     public BitmapFont theBigFont;
     public BitmapFont theSmallFont;
     public Slider.SliderStyle customSliderStyle;
+    public DateTimeFormatter formatter;
+
+    private boolean isLoggedIn = false;
+    public boolean getLoggedIn(){ return this.isLoggedIn; }
+    public void setLoggedIn(boolean isLoggedIn) { this.isLoggedIn = isLoggedIn; }
 
     // Store current volume levels
     private float sfxVolume;
     private float musicVolume;
+    public long hissLoopId = -1;
 
-    public long hissLoopId = -1; // Add this field at the top
-
-    // Add difficulty-related fields
+    // region Add difficulty-related fields
     public enum Difficulty {
         EASY(0.2f),
         MEDIUM(0.15f),
@@ -71,6 +77,7 @@ public class SnakeGame extends Game {
     public void setCurrentDifficulty(Difficulty difficulty) {
         this.currentDifficulty = difficulty;
     }
+    //endregion
 
     @Override
     public void create() {
@@ -81,6 +88,8 @@ public class SnakeGame extends Game {
         backgroundMusic.setLooping(true);
         backgroundMusic.setVolume(0.2f);
         backgroundMusic.play();
+
+        formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm a");
 
         // Load preferences
         Preferences prefs = Gdx.app.getPreferences("MySnakeGamePreferences");
@@ -152,7 +161,6 @@ public class SnakeGame extends Game {
 
         setScreen(new FirstScreen(this));
     }
-
     public void imageAnimation (Image randomImage)
     {
         randomImage.addAction(Actions.forever(
