@@ -8,6 +8,7 @@ public class Snake {
     private Direction direction;
     private boolean isAlive;
     private int growthPending;
+    private Position nextPosition;  // Add this field to store the next position
 
     public Snake() {
         this.body = new ArrayList<>();
@@ -18,6 +19,7 @@ public class Snake {
         body.add(new Position(5, 5));
         body.add(new Position(4, 5));
         body.add(new Position(3, 5));
+        this.nextPosition = getNextPosition();  // Initialize next position
     }
 
     public List<Position> getBody() {
@@ -53,18 +55,15 @@ public class Snake {
         growthPending += food.getType().getGrowth();
     }
 
-    public void move() {
-        Position newHead = getNextPosition();
-        body.add(0, newHead);
-        
-        if (growthPending > 0) {
-            growthPending--;
-        } else {
-            body.remove(body.size() - 1);
-        }
+    public void setNextPosition(Position position) {
+        this.nextPosition = position;
     }
 
     public Position getNextPosition() {
+        if (nextPosition != null) {
+            return nextPosition;
+        }
+        
         Position head = getHead();
         int x = head.getX();
         int y = head.getY();
@@ -85,5 +84,17 @@ public class Snake {
         }
 
         return new Position(x, y);
+    }
+
+    public void move() {
+        Position newHead = getNextPosition();
+        body.add(0, newHead);
+        
+        if (growthPending > 0) {
+            growthPending--;
+        } else {
+            body.remove(body.size() - 1);
+        }
+        nextPosition = null;  // Reset next position after moving
     }
 }

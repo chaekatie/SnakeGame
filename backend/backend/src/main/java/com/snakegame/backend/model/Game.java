@@ -14,6 +14,8 @@ public class Game {
     private int score;
     private boolean gameOver;
     private Random random;
+    private boolean justAteNormalFood;  // Track if we just ate normal food
+    private boolean borderlessMode;      // Track if we're in borderless mode
 
     public Game() {
         this.snake = new Snake();
@@ -21,7 +23,13 @@ public class Game {
         this.random = new Random();
         this.score = 0;
         this.gameOver = false;
+        this.justAteNormalFood = false;
+        this.borderlessMode = false;     // Default to bordered mode
         spawnInitialFood();
+    }
+
+    public void setBorderlessMode(boolean borderless) {
+        this.borderlessMode = borderless;
     }
 
     private void spawnInitialFood() {
@@ -35,11 +43,18 @@ public class Game {
 
         Position nextPosition = snake.getNextPosition();
         
-        // Check wall collision
+        // Handle wall collision based on mode
         if (isWallCollision(nextPosition)) {
-            gameOver = true;
-            snake.setAlive(false);
-            return;
+            if (borderlessMode) {
+                // Wrap around the screen
+                nextPosition = wrapPosition(nextPosition);
+                // Update the snake's next position
+                snake.setNextPosition(nextPosition);
+            } else {
+                gameOver = true;
+                snake.setAlive(false);
+                return;
+            }
         }
 
         // Check self collision
@@ -111,6 +126,21 @@ public class Game {
 
     private boolean isSelfCollision(Position position) {
         return snake.getBody().contains(position);
+    }
+
+    private Position wrapPosition(Position position) {
+        int x = position.getX();
+        int y = position.getY();
+
+        // Wrap horizontally
+        if (x < 0) x = BOARD_WIDTH - 1;
+        if (x >= BOARD_WIDTH) x = 0;
+
+        // Wrap vertically
+        if (y < 0) y = BOARD_HEIGHT - 1;
+        if (y >= BOARD_HEIGHT) y = 0;
+
+        return new Position(x, y);
     }
 
     public void changeDirection(Direction direction) {

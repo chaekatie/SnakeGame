@@ -50,6 +50,10 @@ public class GameSettings implements Screen {
         Gdx.input.setInputProcessor(stage);
         skin = new Skin(Gdx.files.internal("uiskin.json"));
         hasChoseDifficulty = false;
+        hasChoseMap = false;  // Initialize map choice flag
+
+        // Set default mode (with border)
+        GameApi.setBorderlessMode(false);
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Montserrat-Bold.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter param = new FreeTypeFontGenerator.FreeTypeFontParameter();
@@ -353,17 +357,20 @@ public class GameSettings implements Screen {
                 if (borderBox.isChecked()) {
                     noBorderBox.setChecked(false);
                     hasChoseMap = true;
-                    /// chị thêm logic chọn map vô đây nha
+                    // Set bordered mode
+                    GameApi.setBorderlessMode(false);
                 }
             }
         });
-        mediumBox.addListener(new ChangeListener() {
+
+        noBorderBox.addListener(new ChangeListener() {
             @Override
             public void changed(ChangeEvent event, Actor actor) {
                 if (noBorderBox.isChecked()) {
                     borderBox.setChecked(false);
                     hasChoseMap = true;
-                    /// chị thêm logic chọn map vô đây nha
+                    // Set borderless mode
+                    GameApi.setBorderlessMode(true);
                 }
             }
         });
@@ -407,7 +414,8 @@ public class GameSettings implements Screen {
                     game.setCurrentDifficulty(SnakeGame.Difficulty.MEDIUM);
                 }
                 if(!hasChoseMap){
-                    //c set default chế độ map ở đây nha
+                    // Set default to bordered mode if no choice was made
+                    GameApi.setBorderlessMode(false);
                 }
                 game.setScreen(new GameScreen(game, selectedFoods, selectedLayout));
             }

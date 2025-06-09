@@ -58,7 +58,7 @@ public class GameScreen implements Screen {
     private Label normalLabel, specialLabel, goldenLabel;
     private int eatenNormal, eatenSpecial, eatenGolden, totalScores;
     private LocalDateTime startTime, endTime;
-
+    
     private Texture snakeHeadTexture, snakeBodyTexture, snakeTailTexture, snakeCornerTexture;
     private Texture normalFoodTexture, specialFoodTexture, goldenFoodTexture;
     private Sprite headSprite, bodySprite, tailSprite, cornerSprite;
@@ -114,7 +114,7 @@ public class GameScreen implements Screen {
         stage.addActor(backgroundImage);
         backgroundImage.toBack();
         //endregion
-
+        
         //region Textures and Sprites
         // Load snake textures
         snakeHeadTexture = new Texture("snake/head.png");
@@ -133,7 +133,7 @@ public class GameScreen implements Screen {
         bodySprite.setSize(cellSize, cellSize);
         tailSprite.setSize(cellSize, cellSize);
         cornerSprite.setSize(cellSize, cellSize);
-
+        
         // Load food textures
         System.out.println("FOOD ONE: " + selectedFoods.get(0).texturePath);
         System.out.println("FOOD TWO: " + selectedFoods.get(1).texturePath);
@@ -175,12 +175,28 @@ public class GameScreen implements Screen {
         gameOverDialog = new Dialog("GAME OVER", skin) {
             @Override
             protected void result(Object object) {
-            if (object.equals("restart")) {
-                resetGame();
-            } else {
-                game.setScreen(new MenuScreen(game)); // or false based on login
+                if (object.equals("restart")) {
+                    resetGame();
+                } else {
+                    // Reset game before going back to menu
+                    GameApi.resetGame(new GameApi.GameStateCallback() {
+                        @Override
+                        public void onSuccess(GameStateDTO gameState) {
+                            Gdx.app.postRunnable(() -> {
+                                game.setScreen(new MenuScreen(game));
+                            });
+                        }
+
+                        @Override
+                        public void onError(Throwable t) {
+                            Gdx.app.error("GameScreen", "Error resetting game before menu", t);
+                            Gdx.app.postRunnable(() -> {
+                                game.setScreen(new MenuScreen(game));
+                            });
+                        }
+                    });
+                }
             }
-        }
         };
 
         gameOverDialog.getContentTable().setBackground(dialogDrawble);
@@ -213,7 +229,23 @@ public class GameScreen implements Screen {
                 } else if(object.equals("continue")) {
                     isPaused = !isPaused; // Toggle pause state
                 } else {
-                    game.setScreen(new MenuScreen(game));
+                    // Reset game before going back to menu
+                    GameApi.resetGame(new GameApi.GameStateCallback() {
+                        @Override
+                        public void onSuccess(GameStateDTO gameState) {
+                            Gdx.app.postRunnable(() -> {
+                                game.setScreen(new MenuScreen(game));
+                            });
+                        }
+
+                        @Override
+                        public void onError(Throwable t) {
+                            Gdx.app.error("GameScreen", "Error resetting game before menu", t);
+                            Gdx.app.postRunnable(() -> {
+                                game.setScreen(new MenuScreen(game));
+                            });
+                        }
+                    });
                 }
             }
         };
@@ -318,7 +350,7 @@ public class GameScreen implements Screen {
         topBarTable.add(resetButton).pad(60, 10, 10, 10).center();
         topBarTable.add(soundBtnStack).pad(60,10,10,10).right();
         stage.addActor(topBarTable);
-
+        
         // Create score label
         font = new BitmapFont();
         font.getData().setScale(2);
@@ -395,7 +427,7 @@ public class GameScreen implements Screen {
             }
         });
     }
-
+    
     private void fetchGameState() {
         GameApi.fetchGameState(new GameApi.GameStateCallback() {
             @Override
@@ -422,13 +454,13 @@ public class GameScreen implements Screen {
             }
         });
     }
-
+    
     private void updateScoreLabel() {
         if (currentGameState != null) {
             scoreLabel.setText("SCORE: " + currentGameState.score);
         }
     }
-
+    
     @Override
     public void show() {
     }
@@ -445,20 +477,20 @@ public class GameScreen implements Screen {
             updateTimer = 0;
             }
         }
-
+        
         // Handle input
         handleInput();
-
+        
         // Rendering
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(v);
         stage.draw();
-
+        
         drawGameObjects();
     }
-
+    
     private void updateGame() {
         GameApi.updateGame(new GameApi.GameStateCallback() {
             @Override
@@ -542,7 +574,7 @@ public class GameScreen implements Screen {
             }
         });
     }
-
+    
     private void handleInput() {
         // Remove stage input processor temporarily to allow keyboard input
         Gdx.input.setInputProcessor(null);
@@ -651,7 +683,7 @@ public class GameScreen implements Screen {
         boardTable.setPosition(boardX, boardY);
         batch.end();
     }
-
+    
     private void drawGameObjects() {
         if (currentGameState == null) {
             Gdx.app.log("GameScreen", "Current game state is null");
@@ -674,7 +706,7 @@ public class GameScreen implements Screen {
         // Set batch projection to match stage
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-
+        
         // Draw snake
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
         if (snakeBody != null) {
@@ -721,7 +753,7 @@ public class GameScreen implements Screen {
                 currentSprite.draw(batch);
             }
         }
-
+        
         // Draw food
         if (currentGameState.foods != null) {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
@@ -782,12 +814,12 @@ public class GameScreen implements Screen {
 
                     default:
                         // Normal food - no special effects
-                        batch.draw(texture, x, y, cellSize, cellSize);
+            batch.draw(texture, x, y, cellSize, cellSize);
                         break;
                 }
             }
         }
-
+        
         batch.end();
     }
 
@@ -802,12 +834,25 @@ public class GameScreen implements Screen {
         return 0;                       // Default to right
     }
 
+    private int normalizeDelta(int d, int size) {
+        if (d > 1) return d - size;
+        if (d < -1) return d + size;
+        return d;
+    }
+
     private boolean isCorner(GameStateDTO.PositionDTO prev, GameStateDTO.PositionDTO current, GameStateDTO.PositionDTO next) {
         // Check if the snake is making a turn
         int dx1 = current.x - prev.x;
         int dy1 = current.y - prev.y;
         int dx2 = next.x - current.x;
         int dy2 = next.y - current.y;
+
+        // Handle wrapping cases
+        dx1 = normalizeDelta(current.x - prev.x, cols);
+        dy1 = normalizeDelta(current.y - prev.y, rows);
+        dx2 = normalizeDelta(next.x - current.x, cols);
+        dy2 = normalizeDelta(next.y - current.y, rows);
+
 
         // If both movements are not in the same direction, it's a corner
         return (dx1 != dx2) || (dy1 != dy2);
@@ -818,6 +863,12 @@ public class GameScreen implements Screen {
         int dy1 = current.y - prev.y;
         int dx2 = next.x - current.x;
         int dy2 = next.y - current.y;
+
+        // Handle wrapping cases
+        dx1 = normalizeDelta(current.x - prev.x, cols);
+        dy1 = normalizeDelta(current.y - prev.y, rows);
+        dx2 = normalizeDelta(next.x - current.x, cols);
+        dy2 = normalizeDelta(next.y - current.y, rows);
 
         String from = direction(dx1, dy1);
         String to = direction(dx2, dy2);
@@ -894,7 +945,20 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-    	backgroundTexture.dispose();
+        // Reset game before disposing
+        GameApi.resetGame(new GameApi.GameStateCallback() {
+            @Override
+            public void onSuccess(GameStateDTO gameState) {
+                Gdx.app.log("GameScreen", "Game reset on dispose successful");
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                Gdx.app.error("GameScreen", "Error resetting game on dispose", t);
+            }
+        });
+
+        backgroundTexture.dispose();
         snakeHeadTexture.dispose();
         snakeBodyTexture.dispose();
         snakeTailTexture.dispose();
@@ -905,6 +969,5 @@ public class GameScreen implements Screen {
         font.dispose();
         stage.dispose();
         batch.dispose();
-
     }
 }

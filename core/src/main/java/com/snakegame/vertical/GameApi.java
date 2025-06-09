@@ -560,6 +560,40 @@ public class GameApi {
 
     }
 
+    public static void setBorderlessMode(boolean borderless) {
+        String token = getAuthToken();
+        if (token.isEmpty()) {
+            Gdx.app.error("GameApi", "Not authenticated. Please login first.");
+            return;
+        }
+
+        HttpRequestBuilder requestBuilder = new HttpRequestBuilder();
+        HttpRequest request = requestBuilder.newRequest()
+            .method("POST")
+            .url(BASE_URL + "/borderless")
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .content(String.valueOf(borderless))
+            .build();
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                Gdx.app.log("GameApi", "Borderless mode set to: " + borderless);
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.error("GameApi", "Failed to set borderless mode: " + t.getMessage());
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.log("GameApi", "Borderless mode request cancelled");
+            }
+        });
+    }
+
     public static void getAllScoresByTime (String filterType, ScoreFilterCallback callback) {
         String token = getAuthToken();
         System.out.println("TOKEN: " + token);
@@ -655,5 +689,4 @@ public class GameApi {
             }
         });
     }
-
 }

@@ -40,4 +40,9 @@ public class GameController {
     public void reset() {
         gameService.reset();
     }
+
+    @PostMapping("/borderless")
+    public void setBorderlessMode(@RequestBody boolean borderless) {
+        gameService.setBorderlessMode(borderless);
+    }
 }

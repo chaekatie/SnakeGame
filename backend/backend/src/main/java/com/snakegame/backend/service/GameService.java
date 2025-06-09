@@ -30,6 +30,10 @@ public class GameService {
         game.reset();
     }
 
+    public void setBorderlessMode(boolean borderless) {
+        game.setBorderlessMode(borderless);
+    }
+
     public Game getGame() {
         return game;
     }
