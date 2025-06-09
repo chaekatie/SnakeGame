@@ -3,7 +3,6 @@ package com.snakegame.backend.controller;
 import com.snakegame.backend.dto.GameState;
 import com.snakegame.backend.model.Direction;
 import com.snakegame.backend.service.GameService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

@@ -383,7 +383,7 @@ public class GameScreen implements Screen {
 
                 startTime = LocalDateTime.now();
                 startTimeLabel.setText("Start time: " + startTime.format(formatter));
-                System.out.println("START TIME (reset game): "+ startTime);
+                System.out.println("START TIME: "+ startTime);
 
                 Gdx.app.log("GameScreen", "Game reset successful. New snake size: " +
                     (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
@@ -407,13 +407,11 @@ public class GameScreen implements Screen {
                 currentGameState = gameState;
                 updateScoreLabel();
 
-                eatenNormal = eatenSpecial = eatenGolden = totalScores = 0;
-                hasSavedScore = isPaused = false;
-                gameState.gameOver = currentGameState.gameOver = false;
-
-                startTime = LocalDateTime.now();
-                startTimeLabel.setText("Start time: " + startTime.format(formatter));
-                System.out.println("START TIME (fetch game): "+ startTime);
+                if (startTime == null && !gameState.gameOver) {
+                    startTime = LocalDateTime.now();
+                    startTimeLabel.setText("Start time: " + startTime.format(formatter));
+                    System.out.println("START TIME: "+ startTime);
+                }
 
                 Gdx.app.log("GameScreen", "Game state fetched successfully. Snake size: " +
                     (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
@@ -437,6 +435,20 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float v) {
+    	// Game logic update
+        if (!isPaused) { // Only update game if not paused
+        updateTimer += v;
+            directionChangeCooldown = Math.max(0, directionChangeCooldown - v);
+
+            if (updateTimer >= game.getCurrentDifficulty().updateInterval) {
+            updateGame();
+            updateTimer = 0;
+            }
+        }
+
+        // Handle input
+        handleInput();
+
         // Rendering
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -445,20 +457,6 @@ public class GameScreen implements Screen {
         stage.draw();
 
         drawGameObjects();
-
-        // Game logic update
-        if (!isPaused) { // Only update game if not paused
-            updateTimer += v;
-            directionChangeCooldown = Math.max(0, directionChangeCooldown - v);
-
-            if (updateTimer >= game.getCurrentDifficulty().updateInterval) {
-                updateGame();
-                updateTimer = 0;
-            }
-        }
-
-        // Handle input
-        handleInput();
     }
 
     private void updateGame() {
@@ -532,9 +530,9 @@ public class GameScreen implements Screen {
                     long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
                     long hours = ChronoUnit.HOURS.between(startTime, endTime);
 
+                    gameOverDialog.show(stage);
                     scoreMessage.setText("Total scores: " + gameState.score);
                     playtimeMessage.setText("Playing time: " + hours + "h: " + minutes + "m: " + seconds + "s");
-                    gameOverDialog.show(stage);
                 }
             }
             @Override
@@ -660,6 +658,11 @@ public class GameScreen implements Screen {
             return;
         }
 
+        // Don't render if game is paused or over
+        if (isPaused || currentGameState.gameOver) {
+            return;
+        }
+
         // Update animation timers
         specialFoodTimer += Gdx.graphics.getDeltaTime();
         goldenFoodTimer += Gdx.graphics.getDeltaTime();
@@ -676,10 +679,10 @@ public class GameScreen implements Screen {
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
         if (snakeBody != null) {
             Gdx.app.log("GameScreen", "Drawing snake with " + snakeBody.size() + " segments");
-            for (int i = 0; i < snakeBody.size(); i++) {
-                GameStateDTO.PositionDTO segment = snakeBody.get(i);
+        for (int i = 0; i < snakeBody.size(); i++) {
+            GameStateDTO.PositionDTO segment = snakeBody.get(i);
 
-                // Calculate screen position (centered grid)
+            // Calculate screen position (centered grid)
                 float x = boardX + segment.x * cellSize;
                 float y = boardY + segment.y * cellSize;
 
@@ -722,12 +725,12 @@ public class GameScreen implements Screen {
         // Draw food
         if (currentGameState.foods != null) {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
-            for (GameStateDTO.FoodDTO food : currentGameState.foods) {
-                Texture texture = getFoodTexture(food.type);
+        for (GameStateDTO.FoodDTO food : currentGameState.foods) {
+            Texture texture = getFoodTexture(food.type);
 
-                // Calculate screen position (centered grid)
-                float x = boardTable.getX() + food.position.x * cellSize;
-                float y = boardTable.getY() + food.position.y * cellSize;
+            // Calculate screen position (centered grid)
+            float x = boardTable.getX() + food.position.x * cellSize;
+            float y = boardTable.getY() + food.position.y * cellSize;
 
                 // Apply different effects based on food type
                 switch (food.type) {
