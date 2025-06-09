@@ -13,4 +13,5 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     List<Score> findByUsername(String username);           // Lấy điểm theo người dùng
     @Query("SELECT s.username AS username, MAX(s.score) AS highscore FROM Score s GROUP BY s.username ORDER BY highscore DESC")
     List<UserHighScore> findHighScoresGroupByUser();
+
 }

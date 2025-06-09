@@ -26,7 +26,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/register", "/forgot-password", "/reset-password-form**", "/reset-password","/forgot-password","/reset-password-form").permitAll()
                 .requestMatchers("/api/game/reset").permitAll()
-                .requestMatchers("/api/scores/**", "/api/game/**").hasRole("USER")
+                .requestMatchers("/api/scores/**", "/api/game/**","/api/matches/**").hasRole("USER")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
