@@ -374,6 +374,14 @@ public class GameScreen implements Screen {
                 startTimeLabel.setText("Start time: " + startTime.format(formatter));
                 System.out.println("START TIME: "+ startTime);
 
+                // Reset food counters
+                eatenNormal = 0;
+                eatenSpecial = 0;
+                eatenGolden = 0;
+                normalLabel.setText("(10): 0");
+                specialLabel.setText("(20): 0");
+                goldenLabel.setText("(30): 0");
+
                 isPaused = false;
                 Gdx.app.log("GameScreen", "Game reset successful. New snake size: " +
                     (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
@@ -644,6 +652,11 @@ public class GameScreen implements Screen {
             return;
         }
 
+        // Don't render if game is paused or over
+        if (isPaused || currentGameState.gameOver) {
+            return;
+        }
+
         // Update animation timers
         specialFoodTimer += Gdx.graphics.getDeltaTime();
         goldenFoodTimer += Gdx.graphics.getDeltaTime();
@@ -660,10 +673,10 @@ public class GameScreen implements Screen {
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
         if (snakeBody != null) {
             Gdx.app.log("GameScreen", "Drawing snake with " + snakeBody.size() + " segments");
-            for (int i = 0; i < snakeBody.size(); i++) {
-                GameStateDTO.PositionDTO segment = snakeBody.get(i);
-
-                // Calculate screen position (centered grid)
+        for (int i = 0; i < snakeBody.size(); i++) {
+            GameStateDTO.PositionDTO segment = snakeBody.get(i);
+            
+            // Calculate screen position (centered grid)
                 float x = boardX + segment.x * cellSize;
                 float y = boardY + segment.y * cellSize;
 
@@ -706,13 +719,13 @@ public class GameScreen implements Screen {
         // Draw food
         if (currentGameState.foods != null) {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
-            for (GameStateDTO.FoodDTO food : currentGameState.foods) {
-                Texture texture = getFoodTexture(food.type);
-
-                // Calculate screen position (centered grid)
-                float x = boardTable.getX() + food.position.x * cellSize;
-                float y = boardTable.getY() + food.position.y * cellSize;
-
+        for (GameStateDTO.FoodDTO food : currentGameState.foods) {
+            Texture texture = getFoodTexture(food.type);
+            
+            // Calculate screen position (centered grid)
+            float x = boardTable.getX() + food.position.x * cellSize;
+            float y = boardTable.getY() + food.position.y * cellSize;
+            
                 // Apply different effects based on food type
                 switch (food.type) {
                     case SPECIAL:
