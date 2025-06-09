@@ -130,7 +130,9 @@ public class FirstScreen implements Screen {
                     System.out.println("User chose to stay anonymously");
                     warningDialog.hide();
                     GameApi.clearAuthToken();
-                    isLoggedIn = false;
+                    game.setLoggedIn(false);
+                    System.out.println("LOGGED IN: " + game.getLoggedIn());
+
                     background.addAction(Actions.sequence(
                         Actions.parallel(
                             Actions.fadeOut(0.5f),

@@ -10,14 +10,17 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -27,11 +30,12 @@ public class LeaderScreen implements Screen {
     private Viewport viewport;
     private Texture background, leader, board;
     private Image backgroundImage, leaderLogo, boardImage;
-    private ImageButton backButton, filterWeek, filterMonth, filterYear;
+    private ImageButton backButton, globalButton;
     private Label.LabelStyle customLabel;
     private Skin skin;
     private Table rowsTable;
     private boolean isLoggedIn;
+    private Texture[] avatarsTexture;
 
     public LeaderScreen(SnakeGame game){
         this.game = game;
@@ -51,6 +55,7 @@ public class LeaderScreen implements Screen {
 
         customLabel = new Label.LabelStyle();
         customLabel.font = myFont;
+        avatarsTexture = game.avatarsTexture;
 
         rowsTable = new Table();
         Table allScoresTable = new Table();
@@ -82,7 +87,7 @@ public class LeaderScreen implements Screen {
 
         //region Scores Table for leaderboard
         float widthh = boardImage.getPrefWidth();
-        float heightt = boardImage.getPrefWidth();
+        float heightt = boardImage.getPrefHeight();
 
         ScrollPane scrollPane = declareScrollPane(rowsTable, widthh - 40, heightt - 150);
         scrollContainer.add(scrollPane).size(widthh - 40, heightt - 150).pad(0, -30, 50, 20);
@@ -94,45 +99,37 @@ public class LeaderScreen implements Screen {
         allScoresTable.setFillParent(true);
         allScoresTable.add(boardStack).pad(0, 10, 10, 5);
         stage.addActor(allScoresTable);
-        allScoresTable.setY(allScoresTable.getY() + 70);
+        allScoresTable.setY(allScoresTable.getY() + 50);
         //endregion
+
+        loadAllScores();
 
         //region Leaderboard logo
         leader = new Texture("logos\\leaderboard2.png");
         leaderLogo = new Image(new TextureRegionDrawable(new TextureRegion(leader)));
-        game.imageAnimation(leaderLogo);
-        leaderLogo.setPosition(backgroundImage.getX() + 150, backgroundImage.getY() + 770);
-        stage.addActor(leaderLogo);
+        leaderLogo.setPosition(backgroundImage.getX() + 150, backgroundImage.getY() + 1000);
+        //stage.addActor(leaderLogo);
         //endregion
 
-        GameApi.getUserHighScores(new GameApi.UserHighScoreCallback() {
-            @Override
-            public void onSuccess(UserHighScoreDTO[] scores) {
-                if (scores.length == 0) {
-                    Label emptyLabel = new Label("No scores yet!", customLabel);
-                    rowsTable.add(emptyLabel).pad(20);
-                    return;
-                }
+        //region All scores Button
+        Texture allScores = new Texture("buttons\\global.png");
+        globalButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(allScores)));
+        globalButton.setPosition(backgroundImage.getX() + 200, backgroundImage.getY() + 150);
+        stage.addActor(globalButton);
 
-                for (int i = 0; i < scores.length; i++){
-                    UserHighScoreDTO score = scores[i];
-                    rowsTable.row();
-                    rowsTable.add(createPlayerRow(i+1, score.getUsername(), score.getHighScore(), new Texture("logos\\face.png")))
-                        .width(280).height(50).padBottom(20);
-                }
-            }
-
+        globalButton.addListener(new ClickListener() {
             @Override
-            public void onError(Throwable t) {
-                System.out.println("ERROR LOADING THE SCORES: " + t.getMessage());
+            public void clicked(InputEvent event, float x, float y) {
+                game.clicking.play(2f);
+                loadAllScores();
             }
         });
+        //endregion
 
         //region Watch user records Button
         Texture record = new Texture("buttons\\record.png");
         ImageButton userRecord = new ImageButton(new TextureRegionDrawable(new TextureRegion(record)));
-        game.buttonAnimation(userRecord);
-        userRecord.setPosition(backgroundImage.getX() + 500, backgroundImage.getY() + 100);
+        userRecord.setPosition(backgroundImage.getX() + 500, backgroundImage.getY() + 150);
         stage.addActor(userRecord);
 
         userRecord.addListener(new ClickListener() {
@@ -147,12 +144,54 @@ public class LeaderScreen implements Screen {
         //region Filter Leaderboard Button
         Texture filter = new Texture("buttons\\filter.png");
         ImageButton filterBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(filter)));
-        game.buttonAnimation(filterBtn);
-        filterBtn.setPosition(backgroundImage.getX() + 600, backgroundImage.getY() + 700);
+        filterBtn.setPosition(backgroundImage.getX() + 300, backgroundImage.getY() + 40);
         stage.addActor(filterBtn);
         //endregion
 
-        stage.setDebugAll(true);
+        //region Choose Filter
+        CheckBox weekBox = new CheckBox("By Week", skin);
+        CheckBox monthBox = new CheckBox("By Month", skin);
+
+        styleCheckbox(weekBox);
+        styleCheckbox(monthBox);
+
+        Table mapTable = new Table();
+        mapTable.setPosition(600, 100);
+        mapTable.defaults().padRight(10);
+        mapTable.add(weekBox).row();
+        mapTable.add(monthBox);
+        stage.addActor(mapTable);
+
+        weekBox.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                if (weekBox.isChecked()) {
+                    monthBox.setChecked(false);
+                    loadScoresByWeek();
+                }
+            }
+        });
+        monthBox.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                if (monthBox.isChecked()) {
+                    weekBox.setChecked(false);
+                    loadScoresByMonth();
+                }
+            }
+        });
+        //endregion
+
+    }
+
+    public Texture filterTexture(UserHighScoreDTO score){
+        Texture avatarTexture;
+        if(game.getUsername().equals(score.getUsername())){
+            avatarTexture = game.getChosenAvatar();
+        } else {
+            avatarTexture = avatarsTexture[MathUtils.random(avatarsTexture.length - 1)];
+        }
+        return avatarTexture;
     }
 
     public ScrollPane declareScrollPane(Table table, float width, float height){
@@ -190,8 +229,97 @@ public class LeaderScreen implements Screen {
 
     }
 
+    private void loadAllScores(){
+        rowsTable.clear();
+
+        GameApi.getUserHighScores(new GameApi.UserHighScoreCallback() {
+            @Override
+            public void onSuccess(UserHighScoreDTO[] scores) {
+                if (scores.length == 0) {
+                    Label emptyLabel = new Label("No scores yet!", customLabel);
+                    rowsTable.add(emptyLabel).pad(20);
+                    return;
+                }
+
+                for (int i = 0; i < scores.length; i++){
+                    UserHighScoreDTO score = scores[i];
+                    rowsTable.row();
+                    Texture avatarTexture = filterTexture(score);
+                    rowsTable.add(createPlayerRow(i+1, score.getUsername(), score.getHighScore(), avatarTexture))
+                        .width(280).height(50).padBottom(20);
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("ERROR LOADING THE SCORES: " + t.getMessage());
+            }
+        });
+    }
+
+    private void loadScoresByWeek(){
+        rowsTable.clear();
+
+        GameApi.getAllScoresByTime("week", new GameApi.ScoreFilterCallback() {
+            @Override
+            public void onSuccess(UserHighScoreDTO[] scores) {
+                if (scores.length == 0) {
+                    Label emptyLabel = new Label("No scores yet!", customLabel);
+                    rowsTable.add(emptyLabel).pad(20);
+                    return;
+                }
+
+                for (int i = 0; i < scores.length; i++) {
+                    UserHighScoreDTO score = scores[i];
+                    rowsTable.row();
+                    Texture avatarTexture = filterTexture(score);
+                    rowsTable.add(createPlayerRow(i+1, score.getUsername(), score.getHighScore(), avatarTexture))
+                        .width(280).height(50).padBottom(20);
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("Failed to load weekly scores: " + t.getMessage());
+            }
+        });
+    }
+
+    private void loadScoresByMonth(){
+        rowsTable.clear();
+
+        GameApi.getAllScoresByTime("month", new GameApi.ScoreFilterCallback() {
+            @Override
+            public void onSuccess(UserHighScoreDTO[] scores) {
+                if (scores.length == 0) {
+                    Label emptyLabel = new Label("No scores yet!", customLabel);
+                    rowsTable.add(emptyLabel).pad(20);
+                    return;
+                }
+
+                for (int i = 0; i < scores.length; i++) {
+                    UserHighScoreDTO score = scores[i];
+                    rowsTable.row();
+                    Texture avatarTexture = filterTexture(score);
+                    rowsTable.add(createPlayerRow(i+1, score.getUsername(), score.getHighScore(), avatarTexture))
+                        .width(280).height(50).padBottom(20);
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("Failed to load weekly scores: " + t.getMessage());
+            }
+        });
+    }
     @Override
     public void show() {
+    }
+
+    private void styleCheckbox(CheckBox checkbox){
+        checkbox.getImage().setScaling(Scaling.fill);
+        checkbox.getImageCell().size(40, 40);
+        checkbox.getLabel().setFontScale(1.5f);
     }
 
     private String formatRank(int rank) {

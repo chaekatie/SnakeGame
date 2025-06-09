@@ -13,6 +13,9 @@ import com.badlogic.gdx.utils.JsonValue;
 import com.badlogic.gdx.Preferences;
 
 import java.net.URLEncoder;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class GameApi {
@@ -38,6 +41,11 @@ public class GameApi {
         void onError(String error);
     }
 
+    public interface GameScoreCallback {
+        void onSuccess();
+        void onError(Throwable t);
+    }
+
     public interface UserHighScoreCallback {
         void onSuccess(UserHighScoreDTO[] scores);
         void onError(Throwable error);
@@ -46,6 +54,11 @@ public class GameApi {
     public interface MyScoreCallback {
         void onSuccess(ScoreDTO[] myScores);
         void onError(Throwable error);
+    }
+
+    public interface ScoreFilterCallback {
+        void onSuccess(UserHighScoreDTO[] scores);
+        void onError(Throwable t);
     }
 
     private static String getAuthToken() {
@@ -546,4 +559,101 @@ public class GameApi {
         });
 
     }
+
+    public static void getAllScoresByTime (String filterType, ScoreFilterCallback callback) {
+        String token = getAuthToken();
+        System.out.println("TOKEN: " + token);
+        if (token.isEmpty()) {
+            System.out.println("GameApi" + "Not authenticated. Please login first.");
+            return;
+        }
+
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("GET")
+            .url(BASE_URL_3 + "/filter?type=" + filterType)
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                String json = httpResponse.getResultAsString();
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                System.out.println("STATUS CODE: " + statusCode);
+                System.out.println("JSON RESPONSE: " + json);
+
+                try {
+                    UserHighScoreDTO[] scores = new Json().fromJson(UserHighScoreDTO[].class, json);
+                    Gdx.app.postRunnable(() -> callback.onSuccess(scores));
+                } catch (Exception e) {
+                    Gdx.app.postRunnable(() -> callback.onError(e));
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError(t));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError(new Exception("Request cancelled")));
+            }
+        });
+    }
+
+    public static void saveUserScore(String username, int score, GameScoreCallback callback) {
+        System.out.println("🟣 saveUserScore() CALLED");
+
+        String token = getAuthToken();
+        System.out.println("TOKEN: " + token);
+        if (token.isEmpty()) {
+            System.out.println("GameApi" + "Not authenticated. Please login first.");
+            return;
+        }
+
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("POST")
+            .url(BASE_URL_3)
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+        String json = "{ \"username\": \"" + username + "\", \"score\": " + score + " }";
+        request.setContent(json);
+
+        System.out.println("USERNAME: "+ username);
+        System.out.println("SCORE: "+ score);
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                String json = httpResponse.getResultAsString();
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                System.out.println("STATUS CODE (save score): " + statusCode);
+                System.out.println("JSON RESPONSE (save score): " + json);
+
+                if(statusCode == 200){
+                    Gdx.app.postRunnable(() -> callback.onSuccess());
+                } else {
+                    Gdx.app.postRunnable(() ->
+                        callback.onError(new Exception("Submit failed: " + statusCode)));
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError(t));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError(new Exception("Request Cancelled!")));
+            }
+        });
+    }
+
 }

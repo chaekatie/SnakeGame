@@ -35,7 +35,7 @@ public class SettingScreen implements Screen {
     private Image background, settingLogo, musicVolume, soundVolume, selectAva, avatarImage;
     private ImageButton backButton;
     private final Slider musicSlider, sfxSlider;
-    private Texture[] avatarTexture;
+    private Texture[] avatarsTexture;
     private Label selected;
     private boolean isLoggedin;
 
@@ -46,6 +46,7 @@ public class SettingScreen implements Screen {
         stage = new Stage(viewport, game.batch);
         Gdx.input.setInputProcessor(stage);
         this.isLoggedin = game.getLoggedIn();
+        this.avatarsTexture = game.avatarsTexture;
 
         mainBg = new Texture("backgrounds\\emptybg.png");
         background = new Image(mainBg);
@@ -56,7 +57,7 @@ public class SettingScreen implements Screen {
         customLabel.font = game.theSmallFont;
         customLabel.fontColor = Color.BLACK;
 
-        //region Avatar Selection
+        //region Avatar Logo
         selected = new Label("You chose this avatar!", customLabel);
         selected.setPosition(
             game.V_WIDTH/12,
@@ -79,31 +80,34 @@ public class SettingScreen implements Screen {
             game.V_HEIGHT/3
         );
         stage.addActor(selectAva);
+        //endregion
 
-        avatarTexture = new Texture[]{
-            new Texture("avatars\\snake1.png"),
-            new Texture("avatars\\snake2.png"),
-            new Texture("avatars\\snake3.png")
-        };
+        //region Avatar Selection
         Table avatarTable = new Table();
-        Array<Image> avatarImages = new Array<>(); // keep references
+        Array<Image> avatarImages = new Array<>();
+        Array<Integer> clickCounts = new Array<>();
 
-        for (int i = 0; i < avatarTexture.length; i++) {
+        for (int i = 0; i < avatarsTexture.length; i++) {
             final int index = i;
-            final Image avatarImage = new Image(new TextureRegionDrawable(new TextureRegion(avatarTexture[i])));
+            clickCounts.add(0);
+            Texture chosenAva = avatarsTexture[i];
+            final Image avatarImage = new Image(new TextureRegionDrawable(new TextureRegion(chosenAva)));
             avatarImage.setSize(300, 300);
             avatarImages.add(avatarImage);
 
             avatarImage.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-//                    for (Image img : avatarImages) {
-//                        img.setScale(1f); // reset all
-//                    }
-                    //theAvatar = avatarImage;
-                    avatarImage.setScale(1.2f); // highlight selected one
+                    int currentClicks = clickCounts.get(index) + 1;
+                    clickCounts.set(index, currentClicks);
+
+                    if(currentClicks == 1){
+                        avatarImage.setScale(1.2f);
+                        game.setChosenAvatar(chosenAva);
+                    } else { System.out.println("Multiple clicks (" + currentClicks + ") on " + chosenAva); }
                 }
             });
+
             avatarTable.add(avatarImage).pad(20);
         }
         avatarTable.pack();

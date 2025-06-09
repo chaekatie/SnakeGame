@@ -56,7 +56,7 @@ public class GameScreen implements Screen {
     private LayoutType selectedLayout;
     private Skin skin;
     private Label normalLabel, specialLabel, goldenLabel;
-    private int eatenNormal, eatenSpecial, eatenGolden;
+    private int eatenNormal, eatenSpecial, eatenGolden, totalScores;
     private LocalDateTime startTime, endTime;
 
     private Texture snakeHeadTexture, snakeBodyTexture, snakeTailTexture, snakeCornerTexture;
@@ -66,7 +66,7 @@ public class GameScreen implements Screen {
 
     private Label scoreLabel, startTimeLabel, scoreMessage, playtimeMessage, detailsScoreMessage;
     private BitmapFont font;
-    private boolean isPaused = false, isLoggedIn; // Add pause state flag
+    private boolean isPaused = false, isLoggedIn, hasSavedScore; // Add pause state flag
     private Dialog gameOverDialog, announcingDialog;
     private DateTimeFormatter formatter;
 
@@ -104,6 +104,7 @@ public class GameScreen implements Screen {
         currentGameState.snakeBody = new ArrayList<>();
         currentGameState.foods = new ArrayList<>();
         currentGameState.score = 0;
+        currentGameState.gameOver = false;
 
         //region Background
         backgroundTexture = new Texture("backgrounds\\bgempty.png");
@@ -357,7 +358,8 @@ public class GameScreen implements Screen {
         //endregion
 
         // Initial game state fetch
-        fetchGameState();
+        //fetchGameState();
+        resetGame();
     }
 
     private void resetGame() {
@@ -370,19 +372,19 @@ public class GameScreen implements Screen {
                 }
                 currentGameState = gameState;
                 updateScoreLabel();
-                startTime = LocalDateTime.now();
-                startTimeLabel.setText("Start time: " + startTime.format(formatter));
-                System.out.println("START TIME: "+ startTime);
 
-                // Reset food counters
-                eatenNormal = 0;
-                eatenSpecial = 0;
-                eatenGolden = 0;
+                eatenNormal = eatenSpecial = eatenGolden = totalScores = 0;
+                hasSavedScore = isPaused = false;
+
+                // Update UI
                 normalLabel.setText("(10): 0");
                 specialLabel.setText("(20): 0");
                 goldenLabel.setText("(30): 0");
 
-                isPaused = false;
+                startTime = LocalDateTime.now();
+                startTimeLabel.setText("Start time: " + startTime.format(formatter));
+                System.out.println("START TIME: "+ startTime);
+
                 Gdx.app.log("GameScreen", "Game reset successful. New snake size: " +
                     (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
             }
@@ -518,12 +520,16 @@ public class GameScreen implements Screen {
                 if (gameState.gameOver) {
                     isPaused = true;
                     endTime = LocalDateTime.now();
+                    System.out.println("START PLAY TIME: " + startTime);
+                    System.out.println("END PLAY TIME: " + endTime);
+                    totalScores = gameState.score;
+
+                    saveScores();
 
                     long minutes = ChronoUnit.MINUTES.between(startTime, endTime);
                     long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
                     long hours = ChronoUnit.HOURS.between(startTime, endTime);
 
-                    System.out.println("END TIME: " + endTime);
                     gameOverDialog.show(stage);
                     scoreMessage.setText("Total scores: " + gameState.score);
                     playtimeMessage.setText("Playing time: " + hours + "h: " + minutes + "m: " + seconds + "s");
@@ -675,7 +681,7 @@ public class GameScreen implements Screen {
             Gdx.app.log("GameScreen", "Drawing snake with " + snakeBody.size() + " segments");
         for (int i = 0; i < snakeBody.size(); i++) {
             GameStateDTO.PositionDTO segment = snakeBody.get(i);
-            
+
             // Calculate screen position (centered grid)
                 float x = boardX + segment.x * cellSize;
                 float y = boardY + segment.y * cellSize;
@@ -721,11 +727,11 @@ public class GameScreen implements Screen {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
         for (GameStateDTO.FoodDTO food : currentGameState.foods) {
             Texture texture = getFoodTexture(food.type);
-            
+
             // Calculate screen position (centered grid)
             float x = boardTable.getX() + food.position.x * cellSize;
             float y = boardTable.getY() + food.position.y * cellSize;
-            
+
                 // Apply different effects based on food type
                 switch (food.type) {
                     case SPECIAL:
@@ -846,6 +852,24 @@ public class GameScreen implements Screen {
             case GOLDEN: return goldenFoodTexture;
             default: return normalFoodTexture;
         }
+    }
+
+
+    private void saveScores(){
+        GameApi.saveUserScore(game.getUsername(), totalScores, new GameApi.GameScoreCallback() {
+
+            @Override
+            public void onSuccess() {
+                hasSavedScore = true;
+                System.out.println("SAVED DATA (saveScores method): username - " + game.getUsername() + ", score - " + totalScores);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("ERROR: " + t);
+                hasSavedScore = false;
+            }
+        });
     }
 
     @Override
