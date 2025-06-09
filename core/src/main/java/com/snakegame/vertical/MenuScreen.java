@@ -261,7 +261,6 @@ public class MenuScreen implements Screen {
                 Actions.moveBy(0, -10, 0.4f)
             )
         ));
-        stage.addActor(borderWrapper);
         //endregion
 
         stage.addActor(play);
@@ -271,6 +270,7 @@ public class MenuScreen implements Screen {
         stage.addActor(about);
         if(isLoggedIn) {
             stage.addActor(logoutBtn);
+            stage.addActor(borderWrapper);
         } else {
             stage.addActor(loginBtn);
         }
