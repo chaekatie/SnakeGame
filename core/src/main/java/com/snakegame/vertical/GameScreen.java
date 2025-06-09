@@ -106,7 +106,7 @@ public class GameScreen implements Screen {
         currentGameState.score = 0;
 
         //region Background
-        backgroundTexture = new Texture("backgrounds\\bgempty1.png");
+        backgroundTexture = new Texture("backgrounds\\bgempty.png");
         TextureRegionDrawable background = new TextureRegionDrawable(new TextureRegion(backgroundTexture));
         backgroundImage = new Image(background);
         game.appearTransition(backgroundImage);
