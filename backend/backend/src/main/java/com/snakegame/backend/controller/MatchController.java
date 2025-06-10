@@ -27,8 +27,10 @@ public class MatchController {
     private UserRepository userRepository;
 
     @PostMapping
-    public ResponseEntity<?> createMatch(@RequestBody MatchRequest request) {
-        User user = userRepository.findById(request.getUserId())
+    public ResponseEntity<?> createMatch(@RequestBody MatchRequest request, Authentication authentication) {
+        String username = authentication.getName();
+
+        User user = userRepository.findByUsername(username)
             .orElseThrow(() -> new RuntimeException("User not found"));
 
         Match match = new Match();
