@@ -9,11 +9,6 @@ import com.badlogic.gdx.net.HttpRequestBuilder;
 import com.badlogic.gdx.utils.*;
 import com.badlogic.gdx.Preferences;
 
-import java.net.URLEncoder;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
 
 public class GameApi {
 
@@ -21,6 +16,8 @@ public class GameApi {
     private static final String BASE_URL_2 = "http://localhost:8080/api/auth";
     private static final String BASE_URL_3 = "http://localhost:8080/api/scores";
     private static final String BASE_URL_4 = "http://localhost:8080/api/matches";
+    private static final String FORGOT_PASSWORD_URL = "http://localhost:8080/forgot-password-request-otp";
+    private static final String RESET_PASSWORD_WITH_OTP_URL = "http://localhost:8080/reset-password-with-otp";
     private static final String AUTH_TOKEN_KEY = "auth_token";
     private static boolean isLoggedIn;
 
@@ -350,55 +347,17 @@ public class GameApi {
         });
     }
 
-    public static void sendEmail(String email, SendEmailCallback callback){
-        String url = "http://localhost:8080/forgot-password?email=" + email;
-        System.out.println("Sending request to: " + url);
-
+    // BƯỚC 1: Yêu cầu gửi OTP (gửi email quên mật khẩu)
+// Endpoint: http://localhost:8080/forgot-password-request-otp (nhận JSON body { "email": "..." })
+    public static void requestPasswordResetOtp(String email, SendEmailCallback callback){ // Đổi tên phương thức và callback
         HttpRequestBuilder builder = new HttpRequestBuilder();
         HttpRequest request = builder.newRequest()
             .method("POST")
-            .url(url)
-            .header("Content-Type", "application/x-www-form-urlencoded")
-            .build();
-
-        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
-            @Override
-            public void handleHttpResponse(HttpResponse httpResponse) {
-                int status = httpResponse.getStatus().getStatusCode();
-                String response = httpResponse.getResultAsString();
-                System.out.println("STATUS CODE: " + status);
-                System.out.println("STATUS MESSAGE: " + httpResponse.getStatus().toString());
-                System.out.println("RESPONSE: " + response);
-                System.out.println("HEADERS: " + httpResponse.getHeaders());
-
-                if(status == -1){
-                    callback.onSuccess(response);
-                } else {
-                    callback.onError(response);
-                }
-            }
-
-            @Override
-            public void failed(Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
-            }
-
-            @Override
-            public void cancelled() {
-                callback.onError("Request is cancelled.");
-            }
-        });
-    }
-
-    public static void resetPassword(String token, String newPass, SendEmailCallback callback){
-        HttpRequestBuilder builder = new HttpRequestBuilder();
-        HttpRequest request = builder.newRequest()
-            .method("POST")
-            .url("http://localhost:8080/reset-password")
+            .url(FORGOT_PASSWORD_URL) // Sử dụng hằng số đã định nghĩa
             .header("Content-Type", "application/json")
             .build();
 
-        String body = String.format("{\"token\":\"%s\", \"newPassword\":\"%s\"}", token, newPass);
+        String body = String.format("{\"email\":\"%s\"}", email);
         request.setContent(body);
 
         Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
@@ -406,24 +365,112 @@ public class GameApi {
             public void handleHttpResponse(HttpResponse httpResponse) {
                 int status = httpResponse.getStatus().getStatusCode();
                 String response = httpResponse.getResultAsString();
-                System.out.println("STATUS CODE: " + status);
-                System.out.println("RESPONSE: " + response);
+                System.out.println("STATUS CODE (request OTP): " + status);
+                System.out.println("RESPONSE (request OTP): " + response);
 
-                if (status == 200){
-                    callback.onSuccess(response);
-                } else {
-                    callback.onError(response);
-                }
+                // Chạy callback trên UI thread
+                Gdx.app.postRunnable(() -> {
+                    if(status == 200){ // Kiểm tra status code là 200 (OK)
+                        callback.onSuccess(response);
+                    } else {
+                        callback.onError("Error (" + status + "): " + response);
+                    }
+                });
             }
 
             @Override
             public void failed(Throwable t) {
-                callback.onError("Network error: " + t.getMessage());
+                Gdx.app.postRunnable(() -> callback.onError("Network error or server unreachable during OTP request: " + t.getMessage()));
             }
 
             @Override
             public void cancelled() {
-                callback.onError("Request is cancelled.");
+                Gdx.app.postRunnable(() -> callback.onError("OTP request cancelled."));
+            }
+        });
+    }
+
+    // BƯỚC 2: Xác thực OTP
+// Endpoint: http://localhost:8080/verify-otp (nhận JSON body { "email": "...", "otp": "..." })
+    public static void verifyOtp(String email, String otp, SendEmailCallback callback) { // Sử dụng SimpleApiCallback
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("POST")
+            .url("http://localhost:8080/verify-otp")
+            // Sử dụng hằng số đã định nghĩa BASE_URL_AUTH
+            .header("Content-Type", "application/json")
+            .build();
+
+        String body = String.format("{\"email\":\"%s\", \"otp\":\"%s\"}", email, otp);
+        request.setContent(body);
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                int status = httpResponse.getStatus().getStatusCode();
+                String response = httpResponse.getResultAsString();
+                System.out.println("STATUS CODE (verify OTP): " + status);
+                System.out.println("RESPONSE (verify OTP): " + response);
+
+                Gdx.app.postRunnable(() -> {
+                    if (status == 200) { // Kiểm tra status code là 200 (OK)
+                        callback.onSuccess(response);
+                    } else {
+                        callback.onError("Error (" + status + "): " + response);
+                    }
+                });
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError("Network error during OTP verification: " + t.getMessage()));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError("OTP verification request cancelled."));
+            }
+        });
+    }
+
+    // BƯỚC 3: Đặt lại mật khẩu (sau khi OTP đã được xác thực)
+// Endpoint: http://localhost:8080/reset-password-with-otp (nhận JSON body { "email": "...", "newPassword": "..." })
+    public static void resetPasswordWithOtp(String email, String newPassword, SendEmailCallback callback){ // Đổi tên phương thức và callback
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("POST")
+            .url(RESET_PASSWORD_WITH_OTP_URL) // Sử dụng hằng số đã định nghĩa
+            .header("Content-Type", "application/json")
+            .build();
+
+        String body = String.format("{\"email\":\"%s\", \"newPassword\":\"%s\"}", email, newPassword);
+        request.setContent(body);
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                int status = httpResponse.getStatus().getStatusCode();
+                String response = httpResponse.getResultAsString();
+                System.out.println("STATUS CODE (reset password): " + status);
+                System.out.println("RESPONSE (reset password): " + response);
+
+                Gdx.app.postRunnable(() -> {
+                    if (status == 200){
+                        callback.onSuccess(response);
+                    } else {
+                        callback.onError("Error (" + status + "): " + response);
+                    }
+                });
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError("Network error during password reset: " + t.getMessage()));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError("Password reset request cancelled."));
             }
         });
     }

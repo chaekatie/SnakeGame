@@ -6,6 +6,7 @@ dependencies {
   api "de.golfgl.gdxcontrollerutils:gdx-controllerutils-scene2d:$controllerScene2DVersion"
   api "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
   api "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+  implementation 'com.google.firebase:firebase-crashlytics-buildtools:3.0.4'
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"

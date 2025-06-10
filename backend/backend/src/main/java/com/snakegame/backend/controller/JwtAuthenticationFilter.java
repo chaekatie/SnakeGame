@@ -37,9 +37,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Set<String> publicPaths = Set.of(
             "/api/auth/login",
             "/api/auth/register",
-            "/forgot-password",
-            "/reset-password",
-            "/reset-password-form"
+            "/forgot-password-request-otp",
+            "/verify-otp",
+            "/reset-password-with-otp"
         );
         if (publicPaths.contains(request.getServletPath())) {
             filterChain.doFilter(request, response);

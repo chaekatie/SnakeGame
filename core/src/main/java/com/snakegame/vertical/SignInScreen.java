@@ -239,7 +239,7 @@ public class SignInScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(game.getSfxVolume());
-                game.setScreen(new ResetPasswordScreen(game, false));
+                game.setScreen(new ResetPasswordScreen(game, false, false, ""));
             }
         });
         forgotPassBtn.setPosition(

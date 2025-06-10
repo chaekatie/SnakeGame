@@ -2,6 +2,8 @@
 buildscript {
   repositories {
     gradlePluginPortal()
+    google()
+    mavenCentral()
   }
   dependencies {
     classpath "io.github.fourlastor:construo:1.7.1"
