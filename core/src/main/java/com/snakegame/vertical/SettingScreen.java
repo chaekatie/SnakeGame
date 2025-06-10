@@ -86,6 +86,7 @@ public class SettingScreen implements Screen {
         Table avatarTable = new Table();
         Array<Image> avatarImages = new Array<>();
         Array<Integer> clickCounts = new Array<>();
+        Texture currentChosenAvatar = game.getChosenAvatar();
 
         for (int i = 0; i < avatarsTexture.length; i++) {
             final int index = i;
@@ -93,18 +94,36 @@ public class SettingScreen implements Screen {
             Texture chosenAva = avatarsTexture[i];
             final Image avatarImage = new Image(new TextureRegionDrawable(new TextureRegion(chosenAva)));
             avatarImage.setSize(300, 300);
+            // Set initial scale based on whether this is the currently chosen avatar
+            if (chosenAva == currentChosenAvatar) {
+                avatarImage.setScale(1.2f);
+            }
             avatarImages.add(avatarImage);
 
             avatarImage.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-                    int currentClicks = clickCounts.get(index) + 1;
-                    clickCounts.set(index, currentClicks);
+                    // If clicking the currently selected avatar, deselect it
+                    if (chosenAva == game.getChosenAvatar()) {
+                        game.setChosenAvatar(null);
+                        avatarImage.setScale(1.0f);
+                        return;
+                    }
 
-                    if(currentClicks == 1){
-                        avatarImage.setScale(1.2f);
-                        game.setChosenAvatar(chosenAva);
-                    } else { System.out.println("Multiple clicks (" + currentClicks + ") on " + chosenAva); }
+                    // If there was a previously selected avatar, reset its scale
+                    if (game.getChosenAvatar() != null) {
+                        for (int j = 0; j < avatarsTexture.length; j++) {
+                            if (avatarsTexture[j] == game.getChosenAvatar()) {
+                                avatarImages.get(j).setScale(1.0f);
+                                break;
+                            }
+                        }
+                    }
+
+                    // Select the new avatar
+                    game.setChosenAvatar(chosenAva);
+                    avatarImage.setScale(1.2f);
+                    System.out.println("AVATAR CHOSEN: " + chosenAva);
                 }
             });
 

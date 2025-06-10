@@ -23,6 +23,8 @@ import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.TimeUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class PrizeScreen implements Screen {
     private SnakeGame game;
@@ -126,7 +128,7 @@ public class PrizeScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
-                loadMyScores();
+        loadMyScores();
             }
         });
         recordButton.setPosition(backButton.getX() + 400, backgroundImage.getY() + 450);
@@ -421,7 +423,10 @@ public class PrizeScreen implements Screen {
         Label scoreLabel = new Label(String.valueOf(score), customLabel2);
         scoreLabel.setAlignment(Align.left);
 
-        Label timeLabel = new Label(time, customLabel2);
+        // Parse and format the time string
+        LocalDateTime dateTime = LocalDateTime.parse(time);
+        String formattedTime = dateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
+        Label timeLabel = new Label(formattedTime, customLabel2);
         timeLabel.setAlignment(Align.left);
 
         row.add(rankLabel).width(30).pad(10,10,10,20);

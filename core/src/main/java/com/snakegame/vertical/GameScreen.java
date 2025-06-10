@@ -52,8 +52,9 @@ public class GameScreen implements Screen {
     private static final float DIRECTION_CHANGE_COOLDOWN = 0.02f; //  Faster direction changes
 
     private Table boardTable, topBarTable;
-    private Texture resetTexture, soundOnTexture, soundOffTexture, pauseTexture, backgroundTexture;
+    private Texture resetTexture, soundOnTexture, soundOffTexture, pauseTexture, playTexture, backgroundTexture;
     private ImageButton pauseButton, resetButton, soundOnButton, soundOffButton;
+    private TextureRegionDrawable pauseDrawable, playDrawable;
     private Array<FoodType> selectedFoods;
     private LayoutType selectedLayout;
     private Skin skin;
@@ -88,7 +89,7 @@ public class GameScreen implements Screen {
         skin = new Skin(Gdx.files.internal("uiskin.json"));
 
         this.isLoggedIn = game.getLoggedIn();
-        this.formatter = game.formatter;
+        this.formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
         this.selectedFoods = selectedFoods;
         this.selectedLayout = selectedLayout;
         eatenNormal = eatenSpecial = eatenGolden = 0;
@@ -117,7 +118,7 @@ public class GameScreen implements Screen {
         stage.addActor(backgroundImage);
         backgroundImage.toBack();
         //endregion
-
+        
         //region Textures and Sprites
         // Load snake textures
         snakeHeadTexture = new Texture("snake/head.png");
@@ -136,7 +137,7 @@ public class GameScreen implements Screen {
         bodySprite.setSize(cellSize, cellSize);
         tailSprite.setSize(cellSize, cellSize);
         cornerSprite.setSize(cellSize, cellSize);
-
+        
         // Load food textures
         System.out.println("FOOD ONE: " + selectedFoods.get(0).texturePath);
         System.out.println("FOOD TWO: " + selectedFoods.get(1).texturePath);
@@ -231,6 +232,8 @@ public class GameScreen implements Screen {
                     resetGame();
                 } else if(object.equals("continue")) {
                     isPaused = !isPaused; // Toggle pause state
+                    // Switch back to pause texture when continuing
+                    pauseButton.getStyle().imageUp = pauseDrawable;
                 } else {
                     // Reset game before going back to menu
                     GameApi.resetGame(new GameApi.GameStateCallback() {
@@ -273,11 +276,13 @@ public class GameScreen implements Screen {
         topBarTable.setFillParent(true);
 
         pauseTexture = new Texture("buttons\\pause.png");
-        TextureRegionDrawable pauseDrawable = new TextureRegionDrawable(new TextureRegion(pauseTexture));
+        playTexture = new Texture("buttons\\play.png");
+        pauseDrawable = new TextureRegionDrawable(new TextureRegion(pauseTexture));
+        playDrawable = new TextureRegionDrawable(new TextureRegion(playTexture));
         pauseButton = new ImageButton(pauseDrawable);
         game.buttonAnimation(pauseButton);
 
-        resetTexture = new Texture("buttons\\play.png");
+        resetTexture = new Texture("buttons\\reset.png");
         TextureRegionDrawable resetDrawable = new TextureRegionDrawable(new TextureRegion(resetTexture));
         resetButton = new ImageButton(resetDrawable);
         game.buttonAnimation(resetButton);
@@ -302,8 +307,16 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 System.out.println("sound on button clicked!");
                 game.clicking.play(game.getSfxVolume());
-                game.backgroundMusic.setVolume(0f); // Mute music
-                game.snakeHiss.setVolume(game.hissLoopId, 0f); // Mute hiss
+                // Mute all sounds
+                game.backgroundMusic.setVolume(0f);
+                game.snakeHiss.setVolume(game.hissLoopId, 0f);
+                // Store current sound IDs before muting
+                long normalFoodId = game.normalFoodSound.play(0f);
+                long specialFoodId = game.specialFoodSound.play(0f);
+                long goldenFoodId = game.goldenFoodSound.play(0f);
+                game.normalFoodSound.setVolume(normalFoodId, 0f);
+                game.specialFoodSound.setVolume(specialFoodId, 0f);
+                game.goldenFoodSound.setVolume(goldenFoodId, 0f);
                 soundOffButton.setVisible(true);
                 soundOffButton.setTouchable(Touchable.enabled);
                 soundOnButton.setVisible(false);
@@ -316,8 +329,16 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 System.out.println("sound off button clicked!");
                 game.clicking.play(game.getSfxVolume());
-                game.backgroundMusic.setVolume(0.2f); // Restore music volume
-                game.snakeHiss.setVolume(game.hissLoopId, 2f); // Restore hiss volume
+                // Restore all sounds to their proper volumes
+                game.backgroundMusic.setVolume(game.getSfxVolume());
+                game.snakeHiss.setVolume(game.hissLoopId, game.getSfxVolume());
+                // Store current sound IDs before restoring volume
+                long normalFoodId = game.normalFoodSound.play(game.getSfxVolume());
+                long specialFoodId = game.specialFoodSound.play(game.getSfxVolume());
+                long goldenFoodId = game.goldenFoodSound.play(game.getSfxVolume());
+                game.normalFoodSound.setVolume(normalFoodId, game.getSfxVolume());
+                game.specialFoodSound.setVolume(specialFoodId, game.getSfxVolume());
+                game.goldenFoodSound.setVolume(goldenFoodId, game.getSfxVolume());
                 soundOnButton.setVisible(true);
                 soundOnButton.setTouchable(Touchable.enabled);
                 soundOffButton.setVisible(false);
@@ -340,6 +361,14 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(game.getSfxVolume());
                 isPaused = !isPaused; // Toggle pause state
+                
+                // Update button texture based on pause state
+                if (isPaused) {
+                    pauseButton.getStyle().imageUp = playDrawable;
+                } else {
+                    pauseButton.getStyle().imageUp = pauseDrawable;
+                }
+                
                 announcingDialog.show(stage);
             }
         });
@@ -353,7 +382,7 @@ public class GameScreen implements Screen {
         topBarTable.add(resetButton).pad(60, 10, 10, 10).center();
         topBarTable.add(soundBtnStack).pad(60,10,10,10).right();
         stage.addActor(topBarTable);
-
+        
         // Create score label
         font = new BitmapFont();
         font.getData().setScale(2);
@@ -430,7 +459,7 @@ public class GameScreen implements Screen {
             }
         });
     }
-
+    
     private void fetchGameState() {
         GameApi.fetchGameState(new GameApi.GameStateCallback() {
             @Override
@@ -457,13 +486,13 @@ public class GameScreen implements Screen {
             }
         });
     }
-
+    
     private void updateScoreLabel() {
         if (currentGameState != null) {
             scoreLabel.setText("SCORE: " + currentGameState.score);
         }
     }
-
+    
     @Override
     public void show() {
     }
@@ -480,20 +509,20 @@ public class GameScreen implements Screen {
             updateTimer = 0;
             }
         }
-
+        
         // Handle input
         handleInput();
-
+        
         // Rendering
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(v);
         stage.draw();
-
+        
         drawGameObjects();
     }
-
+    
     private void updateGame() {
         GameApi.updateGame(new GameApi.GameStateCallback() {
             @Override
@@ -580,7 +609,7 @@ public class GameScreen implements Screen {
             }
         });
     }
-
+    
     private void handleInput() {
         // Remove stage input processor temporarily to allow keyboard input
         Gdx.input.setInputProcessor(null);
@@ -596,19 +625,19 @@ public class GameScreen implements Screen {
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && currentDirection != Direction.DOWN) {
                 Gdx.app.log("GameScreen", "UP key pressed - sending direction UP");
-                GameApi.sendDirection(Direction.UP);
+            GameApi.sendDirection(Direction.UP);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
             } else if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN) && currentDirection != Direction.UP) {
                 Gdx.app.log("GameScreen", "DOWN key pressed - sending direction DOWN");
-                GameApi.sendDirection(Direction.DOWN);
+            GameApi.sendDirection(Direction.DOWN);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
             } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && currentDirection != Direction.RIGHT) {
                 Gdx.app.log("GameScreen", "LEFT key pressed - sending direction LEFT");
-                GameApi.sendDirection(Direction.LEFT);
+            GameApi.sendDirection(Direction.LEFT);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
             } else if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && currentDirection != Direction.LEFT) {
                 Gdx.app.log("GameScreen", "RIGHT key pressed - sending direction RIGHT");
-                GameApi.sendDirection(Direction.RIGHT);
+            GameApi.sendDirection(Direction.RIGHT);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
             }
         }
@@ -652,7 +681,7 @@ public class GameScreen implements Screen {
         if (dy < 0) return Direction.DOWN;
         return null;
     }
-
+    
     private void drawGameObjects() {
         if (currentGameState == null) {
             Gdx.app.log("GameScreen", "Current game state is null");
@@ -675,14 +704,14 @@ public class GameScreen implements Screen {
         // Set batch projection to match stage
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-
+        
         // Draw snake
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
         if (snakeBody != null) {
             Gdx.app.log("GameScreen", "Drawing snake with " + snakeBody.size() + " segments");
         for (int i = 0; i < snakeBody.size(); i++) {
             GameStateDTO.PositionDTO segment = snakeBody.get(i);
-
+            
             // Calculate screen position (centered grid)
                 float x = boardX + segment.x * cellSize;
                 float y = boardY + segment.y * cellSize;
@@ -722,17 +751,17 @@ public class GameScreen implements Screen {
                 currentSprite.draw(batch);
             }
         }
-
+        
         // Draw food
         if (currentGameState.foods != null) {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
         for (GameStateDTO.FoodDTO food : currentGameState.foods) {
             Texture texture = getFoodTexture(food.type);
-
+            
             // Calculate screen position (centered grid)
             float x = boardTable.getX() + food.position.x * cellSize;
             float y = boardTable.getY() + food.position.y * cellSize;
-
+            
                 // Apply different effects based on food type
                 switch (food.type) {
                     case SPECIAL:
@@ -788,7 +817,7 @@ public class GameScreen implements Screen {
                 }
             }
         }
-
+        
         batch.end();
     }
 
@@ -923,7 +952,7 @@ public class GameScreen implements Screen {
             }
         });
     }
-
+    
     @Override
     public void resize(int i, int i1) {
         viewport.update(i, i1, true);
@@ -962,8 +991,10 @@ public class GameScreen implements Screen {
         resetTexture.dispose();
         soundOffTexture.dispose();
         soundOnTexture.dispose();
+        pauseTexture.dispose();
+        playTexture.dispose();
         backgroundTexture.dispose();
-        backgroundTexture.dispose();
+    	backgroundTexture.dispose();
         snakeHeadTexture.dispose();
         snakeBodyTexture.dispose();
         snakeTailTexture.dispose();

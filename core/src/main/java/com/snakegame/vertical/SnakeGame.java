@@ -95,6 +95,13 @@ public class SnakeGame extends Game {
     public void create() {
         batch = new SpriteBatch();
         viewport = new FitViewport(V_WIDTH, V_HEIGHT);
+
+        // Load preferences first
+        Preferences prefs = Gdx.app.getPreferences("MySnakeGamePreferences");
+        sfxVolume = prefs.getFloat("sfxVolume", 2f);
+        musicVolume = prefs.getFloat("musicVolume", 0.2f);
+
+        // Initialize music with loaded volume
         backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("sounds\\bgmusic.mp3"));
         backgroundMusic.setLooping(true);
         backgroundMusic.setVolume(musicVolume);
@@ -117,11 +124,6 @@ public class SnakeGame extends Game {
         };
         chosenAvatar = avatarsTexture[MathUtils.random(avatarsTexture.length - 1)];
         setChosenAvatar(chosenAvatar);
-
-        // Load preferences
-        Preferences prefs = Gdx.app.getPreferences("MySnakeGamePreferences");
-        sfxVolume = prefs.getFloat("sfxVolume", 2f);
-        musicVolume = prefs.getFloat("musicVolume", 0.2f);
 
         //Load sounds
         snakeHiss = Gdx.audio.newSound(Gdx.files.internal("sounds\\hissing.mp3"));
