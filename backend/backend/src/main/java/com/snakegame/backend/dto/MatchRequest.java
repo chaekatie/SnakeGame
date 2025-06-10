@@ -1,21 +1,13 @@
 package com.snakegame.backend.dto;
 
+import java.util.List;
+
 public class MatchRequest {
-    private Long userId;
     private int totalScore;
     private int playTime;
-    private int food1Count;
-    private int food2Count;
-    private int food3Count;
-
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(Long userId) {
-        this.userId = userId;
-    }
+    private String normalFoodCount;
+    private String specialFoodCount;
+    private String goldenFoodCount;
 
     public int getTotalScore() {
         return totalScore;
@@ -33,27 +25,13 @@ public class MatchRequest {
         this.playTime = playTime;
     }
 
-    public int getFood1Count() {
-        return food1Count;
-    }
+    public void setNormalFoodCount(String normal) { this.normalFoodCount = normal; }
+    public String getNormalFoodCount() { return this.normalFoodCount; }
 
-    public void setFood1Count(int food1Count) {
-        this.food1Count = food1Count;
-    }
+    public void setSpecialFoodCount(String special) { this.specialFoodCount = special; }
+    public String getSpecialFoodCount() { return this.specialFoodCount; }
 
-    public int getFood2Count() {
-        return food2Count;
-    }
-
-    public void setFood2Count(int food2Count) {
-        this.food2Count = food2Count;
-    }
-
-    public int getFood3Count() {
-        return food3Count;
-    }
-
-    public void setFood3Count(int food3Count) {
-        this.food3Count = food3Count;
-    }
+    public void setGoldenFoodCount(String golden) { this.goldenFoodCount = golden; }
+    public String getGoldenFoodCount() { return this.goldenFoodCount; }
 }
+

@@ -1,50 +1,19 @@
-package com.snakegame.backend.model;
+package com.snakegame.vertical;
 
-import jakarta.persistence.*;
-
-import java.util.ArrayList;
-import java.util.List;
-
-@Entity
-@Table(name = "matches")
-
-public class Match {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
+public class MatchDTO {
+    private Long userId;
     private int totalScore;
     private int playTime;
     private String normalFoodCount;
     private String specialFoodCount;
     private String goldenFoodCount;
 
-    public Match() {}
-
-    public Match(User user, int totalScore, int playTime, String normal, String special, String golden) {
-        this.user = user;
-        this.totalScore = totalScore;
-        this.playTime = playTime;
-        this.normalFoodCount = normal;
-        this.specialFoodCount = special;
-        this.goldenFoodCount = golden;
+    public Long getUserId() {
+        return userId;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public int getTotalScore() {

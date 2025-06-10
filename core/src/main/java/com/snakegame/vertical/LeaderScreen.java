@@ -126,21 +126,6 @@ public class LeaderScreen implements Screen {
         });
         //endregion
 
-        //region Watch user records Button
-        Texture record = new Texture("buttons\\record.png");
-        ImageButton userRecord = new ImageButton(new TextureRegionDrawable(new TextureRegion(record)));
-        userRecord.setPosition(backgroundImage.getX() + 500, backgroundImage.getY() + 150);
-        stage.addActor(userRecord);
-
-        userRecord.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
-                loadMyScores();
-            }
-        });
-        //endregion
-
         //region Filter Leaderboard Button
         Texture filter = new Texture("buttons\\filter.png");
         ImageButton filterBtn = new ImageButton(new TextureRegionDrawable(new TextureRegion(filter)));
@@ -152,8 +137,8 @@ public class LeaderScreen implements Screen {
         CheckBox weekBox = new CheckBox("By Week", skin);
         CheckBox monthBox = new CheckBox("By Month", skin);
 
-        styleCheckbox(weekBox);
-        styleCheckbox(monthBox);
+        game.styleCheckbox(weekBox);
+        game.styleCheckbox(monthBox);
 
         Table mapTable = new Table();
         mapTable.setPosition(600, 100);
@@ -200,33 +185,6 @@ public class LeaderScreen implements Screen {
         scrollPane.setScrollingDisabled(true, false); // only allow vertical scroll
         scrollPane.setSize(width, height);
         return scrollPane;
-    }
-
-    private void loadMyScores(){
-        rowsTable.clear();
-
-        GameApi.getUserScores(new GameApi.MyScoreCallback() {
-            @Override
-            public void onSuccess(ScoreDTO[] myScores) {
-                if (myScores.length == 0) {
-                    Label emptyLabel = new Label("You have no scores yet!", customLabel);
-                    rowsTable.add(emptyLabel);
-                    return;
-                }
-
-                for (int i = 0; i < myScores.length; i++){
-                    ScoreDTO score = myScores[i];
-                    rowsTable.row();
-                    rowsTable.add(createUserRow(i+1, score.getScore(), score.getTime())).width(280).height(50).left().row();
-                }
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                System.out.println("ERROR LOADING THE SCORES: " + t.getMessage());
-            }
-        });
-
     }
 
     private void loadAllScores(){
@@ -314,12 +272,6 @@ public class LeaderScreen implements Screen {
     }
     @Override
     public void show() {
-    }
-
-    private void styleCheckbox(CheckBox checkbox){
-        checkbox.getImage().setScaling(Scaling.fill);
-        checkbox.getImageCell().size(40, 40);
-        checkbox.getLabel().setFontScale(1.5f);
     }
 
     private String formatRank(int rank) {

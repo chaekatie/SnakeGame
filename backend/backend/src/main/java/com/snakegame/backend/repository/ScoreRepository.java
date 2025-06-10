@@ -17,7 +17,16 @@ public interface ScoreRepository extends JpaRepository<Score, Long> {
     @Query("SELECT s.username AS username, MAX(s.score) AS highscore FROM Score s GROUP BY s.username ORDER BY highscore DESC")
     List<UserHighScore> findHighScoresGroupByUser();
 
+    // Filter by week/month for all users
     @Query("SELECT s.username AS username, MAX(s.score) AS highscore FROM Score s WHERE s.time >= :startDate AND s.time < :endDate GROUP BY s.username ORDER BY highscore DESC")
     List<UserHighScore> findScoresByDateRange(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    // Filter by week/month for a specific user
+    @Query("SELECT s FROM Score s WHERE s.username = :username AND s.time BETWEEN :start AND :end ORDER BY s.score DESC")
+    List<Score> findByUsernameFilter(
+        @Param("username") String username,
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end
+    );
 
 }

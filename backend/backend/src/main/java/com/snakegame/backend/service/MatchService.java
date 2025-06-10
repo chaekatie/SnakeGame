@@ -22,13 +22,37 @@ public class MatchService {
         List<Match> matches = matchRepository.findByUser(user);
 
         int totalMatches = matches.size();
-        int totalFood1 = matches.stream().mapToInt(Match::getFood1Count).sum();
-        int totalFood2 = matches.stream().mapToInt(Match::getFood2Count).sum();
-        int totalFood3 = matches.stream().mapToInt(Match::getFood3Count).sum();
+        int totalFood1 = matches.stream()
+            .mapToInt(m -> extractCount(m.getNormalFoodCount()))
+            .sum();
+
+        int totalFood2 = matches.stream()
+            .mapToInt(m -> extractCount(m.getSpecialFoodCount()))
+            .sum();
+
+        int totalFood3 = matches.stream()
+            .mapToInt(m -> extractCount(m.getGoldenFoodCount()))
+            .sum();
+//        int totalFood1 = matches.stream().mapToInt(Match::getFood1Count).sum();
+//        int totalFood2 = matches.stream().mapToInt(Match::getFood2Count).sum();
+//        int totalFood3 = matches.stream().mapToInt(Match::getFood3Count).sum();
         int totalPlayTime = matches.stream().mapToInt(Match::getPlayTime).sum();
         int highestScore = matchRepository.findHighestScoreByUser(user) != null
             ? matchRepository.findHighestScoreByUser(user) : 0;
 
         return new UserStatsResponse(totalMatches, totalFood1, totalFood2, totalFood3, totalPlayTime, highestScore);
     }
+
+    private int extractCount(String foodCountString) {
+        if (foodCountString == null || !foodCountString.contains("-")) {
+            return 0;
+        }
+        try {
+            String[] parts = foodCountString.split("-");
+            return Integer.parseInt(parts[1].trim());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
 }

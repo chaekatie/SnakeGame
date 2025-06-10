@@ -9,8 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
+import java.time.*;
 import java.util.List;
 
 @RestController
@@ -84,5 +83,28 @@ public class ScoreController {
         return ResponseEntity.ok(scores);
     }
 
+    @GetMapping("/user/weekly")
+    public List<Score> getMyScoresThisWeek(@RequestParam String username) {
+        LocalDate now = LocalDate.now();
+        LocalDate startOfWeek = now.with(DayOfWeek.MONDAY);
+        LocalDate endOfWeek = now.with(DayOfWeek.SUNDAY);
+        return scoreRepository.findByUsernameFilter(
+            username,
+            startOfWeek.atStartOfDay(),
+            endOfWeek.atTime(LocalTime.MAX)
+        );
+    }
+
+    @GetMapping("/user/monthly")
+    public List<Score> getMyScoresThisMonth(@RequestParam String username) {
+        YearMonth currentMonth = YearMonth.now();
+        LocalDate startOfMonth = currentMonth.atDay(1);
+        LocalDate endOfMonth = currentMonth.atEndOfMonth();
+        return scoreRepository.findByUsernameFilter(
+            username,
+            startOfMonth.atStartOfDay(),
+            endOfMonth.atTime(LocalTime.MAX)
+        );
+    }
 
 }

@@ -34,6 +34,8 @@ import java.util.Set;
 import java.util.ArrayList;
 import java.util.HashSet;
 
+import static java.lang.Integer.parseInt;
+
 public class GameScreen implements Screen {
     private final SnakeGame game;
     private Image backgroundImage;
@@ -58,7 +60,8 @@ public class GameScreen implements Screen {
     private Label normalLabel, specialLabel, goldenLabel;
     private int eatenNormal, eatenSpecial, eatenGolden, totalScores;
     private LocalDateTime startTime, endTime;
-    
+    private long playTime;
+
     private Texture snakeHeadTexture, snakeBodyTexture, snakeTailTexture, snakeCornerTexture;
     private Texture normalFoodTexture, specialFoodTexture, goldenFoodTexture;
     private Sprite headSprite, bodySprite, tailSprite, cornerSprite;
@@ -66,7 +69,7 @@ public class GameScreen implements Screen {
 
     private Label scoreLabel, startTimeLabel, scoreMessage, playtimeMessage, detailsScoreMessage;
     private BitmapFont font;
-    private boolean isPaused = false, isLoggedIn, hasSavedScore; // Add pause state flag
+    private boolean isPaused = false, isLoggedIn, hasSavedScore, hasSavedMatch; // Add pause state flag
     private Dialog gameOverDialog, announcingDialog;
     private DateTimeFormatter formatter;
 
@@ -114,7 +117,7 @@ public class GameScreen implements Screen {
         stage.addActor(backgroundImage);
         backgroundImage.toBack();
         //endregion
-        
+
         //region Textures and Sprites
         // Load snake textures
         snakeHeadTexture = new Texture("snake/head.png");
@@ -133,7 +136,7 @@ public class GameScreen implements Screen {
         bodySprite.setSize(cellSize, cellSize);
         tailSprite.setSize(cellSize, cellSize);
         cornerSprite.setSize(cellSize, cellSize);
-        
+
         // Load food textures
         System.out.println("FOOD ONE: " + selectedFoods.get(0).texturePath);
         System.out.println("FOOD TWO: " + selectedFoods.get(1).texturePath);
@@ -350,7 +353,7 @@ public class GameScreen implements Screen {
         topBarTable.add(resetButton).pad(60, 10, 10, 10).center();
         topBarTable.add(soundBtnStack).pad(60,10,10,10).right();
         stage.addActor(topBarTable);
-        
+
         // Create score label
         font = new BitmapFont();
         font.getData().setScale(2);
@@ -427,7 +430,7 @@ public class GameScreen implements Screen {
             }
         });
     }
-    
+
     private void fetchGameState() {
         GameApi.fetchGameState(new GameApi.GameStateCallback() {
             @Override
@@ -454,13 +457,13 @@ public class GameScreen implements Screen {
             }
         });
     }
-    
+
     private void updateScoreLabel() {
         if (currentGameState != null) {
             scoreLabel.setText("SCORE: " + currentGameState.score);
         }
     }
-    
+
     @Override
     public void show() {
     }
@@ -477,20 +480,20 @@ public class GameScreen implements Screen {
             updateTimer = 0;
             }
         }
-        
+
         // Handle input
         handleInput();
-        
+
         // Rendering
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(v);
         stage.draw();
-        
+
         drawGameObjects();
     }
-    
+
     private void updateGame() {
         GameApi.updateGame(new GameApi.GameStateCallback() {
             @Override
@@ -561,6 +564,9 @@ public class GameScreen implements Screen {
                     long minutes = ChronoUnit.MINUTES.between(startTime, endTime);
                     long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
                     long hours = ChronoUnit.HOURS.between(startTime, endTime);
+                    playTime = hours * 3600 + minutes * 60 + seconds;
+
+                    saveMatchDetails();
 
                     gameOverDialog.show(stage);
                     scoreMessage.setText("Total scores: " + gameState.score);
@@ -574,7 +580,7 @@ public class GameScreen implements Screen {
             }
         });
     }
-    
+
     private void handleInput() {
         // Remove stage input processor temporarily to allow keyboard input
         Gdx.input.setInputProcessor(null);
@@ -625,65 +631,6 @@ public class GameScreen implements Screen {
         Gdx.input.setInputProcessor(stage);
     }
 
-    private void drawBoard(){
-//        TextureRegionDrawable cell_1 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath1)));
-//        TextureRegionDrawable cell_2 = new TextureRegionDrawable(new TextureRegion(new Texture(selectedLayout.texturePath2)));
-//
-//        boardTable = new Table();
-//
-//        // Calculate the total board size
-//        float totalBoardWidth = cols * cellSize;
-//        float totalBoardHeight = rows * cellSize;
-//
-//        // Center the board on screen
-//        float boardX = (game.V_WIDTH - totalBoardWidth) / 2f;
-//        float boardY = (game.V_HEIGHT - totalBoardHeight) / 2f;
-//
-//        boardTable.setPosition(boardX, boardY);
-//
-//        for (int row = 0; row < rows; row++) {
-//            for (int col = 0; col < cols; col++) {
-//                Image cell = new Image((row + col) % 2 == 0 ? cell_1 : cell_2);
-//                boardTable.add(cell).size(cellSize, cellSize);
-//            }
-//            boardTable.row();
-//        }
-//
-//        boardTable.pack();
-//
-//        boardTable.setPosition(
-//            boardX,
-//            boardY
-//        );
-
-        Texture layoutTex1 = new Texture(selectedLayout.texturePath1);
-        Texture layoutTex2 = new Texture(selectedLayout.texturePath2);
-        TextureRegion cellRegion1 = new TextureRegion(layoutTex1);
-        TextureRegion cellRegion2 = new TextureRegion(layoutTex2);
-
-        batch.setProjectionMatrix(stage.getCamera().combined);
-        batch.begin();
-
-        float boardX = (game.V_WIDTH - cols * cellSize) / 2f;
-        float boardY = (game.V_HEIGHT - rows * cellSize) / 2f;
-
-        boardTable = new Table();
-        boardTable.setPosition(boardX, boardY);
-
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                float x = boardX + col * cellSize;
-                float y = boardY + row * cellSize;
-
-                TextureRegion region = ((row + col) % 2 == 0) ? cellRegion1 : cellRegion2;
-                batch.draw(region, x, y, cellSize, cellSize);
-            }
-        }
-
-        boardTable.setPosition(boardX, boardY);
-        batch.end();
-    }
-    
     private void drawGameObjects() {
         if (currentGameState == null) {
             Gdx.app.log("GameScreen", "Current game state is null");
@@ -706,7 +653,7 @@ public class GameScreen implements Screen {
         // Set batch projection to match stage
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-        
+
         // Draw snake
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
         if (snakeBody != null) {
@@ -753,7 +700,7 @@ public class GameScreen implements Screen {
                 currentSprite.draw(batch);
             }
         }
-        
+
         // Draw food
         if (currentGameState.foods != null) {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
@@ -819,7 +766,7 @@ public class GameScreen implements Screen {
                 }
             }
         }
-        
+
         batch.end();
     }
 
@@ -905,7 +852,6 @@ public class GameScreen implements Screen {
         }
     }
 
-
     private void saveScores(){
         GameApi.saveUserScore(game.getUsername(), totalScores, new GameApi.GameScoreCallback() {
 
@@ -919,6 +865,34 @@ public class GameScreen implements Screen {
             public void onError(Throwable t) {
                 System.out.println("ERROR: " + t);
                 hasSavedScore = false;
+            }
+        });
+    }
+
+    private void saveMatchDetails(){
+        MatchDTO matchDetails = new MatchDTO();
+        matchDetails.setTotalScore(totalScores);
+        int playingTime = (int) playTime;
+        System.out.println("PLAY TIME (save match method): " + playingTime);
+        matchDetails.setPlayTime(playingTime);
+        String normalFood = selectedFoods.get(0).name() + " - " + eatenNormal;
+        String specialFood = selectedFoods.get(1).name() + " - " + eatenSpecial;
+        String goldenFood = selectedFoods.get(2).name() + " - " + eatenGolden;
+        matchDetails.setNormalFoodCount(normalFood);
+        matchDetails.setSpecialFoodCount(specialFood);
+        matchDetails.setGoldenFoodCount(goldenFood);
+
+        GameApi.saveGameMatch(matchDetails, new GameApi.MatchDetailCallback() {
+            @Override
+            public void onSuccess(String message) {
+                hasSavedMatch = true;
+                System.out.println("SAVED DATA (saveMatch method): " + matchDetails.toString());
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("ERROR: " + t);
+                hasSavedMatch = false;
             }
         });
     }

@@ -21,6 +21,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.utils.Scaling;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -189,6 +190,12 @@ public class SnakeGame extends Game {
         setScreen(new FirstScreen(this));
     }
 
+    public void styleCheckbox(CheckBox checkbox){
+        checkbox.getImage().setScaling(Scaling.fill);
+        checkbox.getImageCell().size(40, 40);
+        checkbox.getLabel().setFontScale(1.5f);
+    }
+
     public void imageAnimation (Image randomImage)
     {
         randomImage.addAction(Actions.forever(
@@ -297,10 +304,6 @@ public class SnakeGame extends Game {
             text.getColor().a = 0;
             text.addAction(Actions.fadeIn(0.5f));
         }
-    }
-
-    private static Vector2 getViewportSize(){
-        return new Vector2(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     @Override

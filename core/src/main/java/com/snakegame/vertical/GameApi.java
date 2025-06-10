@@ -6,10 +6,7 @@ import com.badlogic.gdx.Net.HttpResponseListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Gdx2DPixmap;
 import com.badlogic.gdx.net.HttpRequestBuilder;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Json;
-import com.badlogic.gdx.utils.JsonReader;
-import com.badlogic.gdx.utils.JsonValue;
+import com.badlogic.gdx.utils.*;
 import com.badlogic.gdx.Preferences;
 
 import java.net.URLEncoder;
@@ -23,6 +20,7 @@ public class GameApi {
     private static final String BASE_URL = "http://localhost:8080/api/game";
     private static final String BASE_URL_2 = "http://localhost:8080/api/auth";
     private static final String BASE_URL_3 = "http://localhost:8080/api/scores";
+    private static final String BASE_URL_4 = "http://localhost:8080/api/matches";
     private static final String AUTH_TOKEN_KEY = "auth_token";
     private static boolean isLoggedIn;
 
@@ -46,6 +44,11 @@ public class GameApi {
         void onError(Throwable t);
     }
 
+    public interface MyScoreFilterCallback {
+        void onSuccess(ScoreDTO[] scores);
+        void onError(Throwable t);
+    }
+
     public interface UserHighScoreCallback {
         void onSuccess(UserHighScoreDTO[] scores);
         void onError(Throwable error);
@@ -54,6 +57,11 @@ public class GameApi {
     public interface MyScoreCallback {
         void onSuccess(ScoreDTO[] myScores);
         void onError(Throwable error);
+    }
+
+    public interface MatchDetailCallback {
+        void onSuccess(String success);
+        void onError(Throwable t);
     }
 
     public interface ScoreFilterCallback {
@@ -639,7 +647,7 @@ public class GameApi {
     }
 
     public static void saveUserScore(String username, int score, GameScoreCallback callback) {
-        System.out.println("🟣 saveUserScore() CALLED");
+        System.out.println("##### saveUserScore() CALLED");
 
         String token = getAuthToken();
         System.out.println("TOKEN: " + token);
@@ -675,6 +683,148 @@ public class GameApi {
                 } else {
                     Gdx.app.postRunnable(() ->
                         callback.onError(new Exception("Submit failed: " + statusCode)));
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError(t));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError(new Exception("Request Cancelled!")));
+            }
+        });
+    }
+
+    public static void getMyScoresByWeek (String username, MyScoreFilterCallback callback) {
+        String token = getAuthToken();
+        System.out.println("TOKEN: " + token);
+        if (token.isEmpty()) {
+            System.out.println("GameApi" + "Not authenticated. Please login first.");
+            return;
+        }
+
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("GET")
+            .url(BASE_URL_3 + "/user/weekly?username=" + username)
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                String json = httpResponse.getResultAsString();
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                System.out.println("STATUS CODE: " + statusCode);
+                System.out.println("JSON RESPONSE: " + json);
+
+                try {
+                    ScoreDTO[] scores = new Json().fromJson(ScoreDTO[].class, json);
+                    Gdx.app.postRunnable(() -> callback.onSuccess(scores));
+                } catch (Exception e) {
+                    Gdx.app.postRunnable(() -> callback.onError(e));
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError(t));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError(new Exception("Request cancelled")));
+            }
+        });
+    }
+
+    public static void getMyScoresByMonth (String username, MyScoreFilterCallback callback) {
+        String token = getAuthToken();
+        System.out.println("TOKEN: " + token);
+        if (token.isEmpty()) {
+            System.out.println("GameApi" + "Not authenticated. Please login first.");
+            return;
+        }
+
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("GET")
+            .url(BASE_URL_3 + "/user/monthly?username=" + username)
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                String json = httpResponse.getResultAsString();
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                System.out.println("STATUS CODE: " + statusCode);
+                System.out.println("JSON RESPONSE: " + json);
+
+                try {
+                    ScoreDTO[] scores = new Json().fromJson(ScoreDTO[].class, json);
+                    Gdx.app.postRunnable(() -> callback.onSuccess(scores));
+                } catch (Exception e) {
+                    Gdx.app.postRunnable(() -> callback.onError(e));
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError(t));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError(new Exception("Request cancelled")));
+            }
+        });
+    }
+
+    public static void saveGameMatch(MatchDTO matchDetail, MatchDetailCallback callback){
+        System.out.println("###### saveGameMatch() CALLED");
+
+        String token = getAuthToken();
+        System.out.println("TOKEN: " + token);
+        if (token.isEmpty()) {
+            System.out.println("GameApi" + "Not authenticated. Please login first.");
+            return;
+        }
+
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("POST")
+            .url(BASE_URL_4)
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+        Json json = new Json();
+        json.setOutputType(JsonWriter.OutputType.json); // make sure it outputs proper JSON
+        String jsonString = json.toJson(matchDetail);
+        System.out.println("JSON STRING: " + jsonString);
+        request.setContent(jsonString);
+
+        System.out.println("MATCH DETAILS: " + jsonString);
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                String json = httpResponse.getResultAsString();
+                int statusCode = httpResponse.getStatus().getStatusCode();
+                System.out.println("STATUS CODE (save match): " + statusCode);
+                System.out.println("JSON RESPONSE (save match): " + json);
+
+                if(statusCode == 200){
+                    Gdx.app.postRunnable(() -> callback.onSuccess(json));
+                } else {
+                    Gdx.app.postRunnable(() ->
+                        callback.onError(new Exception("Submit failed (save match): " + statusCode)));
                 }
             }
 
