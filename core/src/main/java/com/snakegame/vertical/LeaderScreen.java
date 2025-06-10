@@ -114,7 +114,7 @@ public class LeaderScreen implements Screen {
         //region All scores Button
         Texture allScores = new Texture("buttons\\global.png");
         globalButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(allScores)));
-        globalButton.setPosition(backgroundImage.getX() + 200, backgroundImage.getY() + 150);
+        globalButton.setPosition(backgroundImage.getX() + 400, backgroundImage.getY() + 150);
         stage.addActor(globalButton);
 
         globalButton.addListener(new ClickListener() {
@@ -312,28 +312,6 @@ public class LeaderScreen implements Screen {
         return row;
     }
 
-    public Table createUserRow(int rank, int score, String time) {
-        Table row = new Table();
-        row.defaults().pad(5).height(60);
-
-        Color bgColor = new Color(MathUtils.random(), MathUtils.random(), MathUtils.random(), 0.2f);
-        row.setBackground(skin.newDrawable("white", bgColor));
-
-        Label rankLabel = new Label(String.valueOf(rank), customLabel);
-        rankLabel.setAlignment(Align.right);
-
-        Label scoreLabel = new Label(String.valueOf(score), customLabel);
-        scoreLabel.setAlignment(Align.left);
-
-        Label timeLabel = new Label(time, customLabel);
-        timeLabel.setAlignment(Align.left);
-
-        row.add(rankLabel).width(30).pad(10,0,20,20);
-        row.add(timeLabel).width(300).pad(10,10,10,30);
-        row.add(scoreLabel).width(80).pad(10,30,10,10);
-        return row;
-    }
-
     @Override
     public void render(float v) {
         Gdx.gl.glClearColor(0, 0, 0, 1);
@@ -365,6 +343,8 @@ public class LeaderScreen implements Screen {
 
     @Override
     public void dispose() {
-
+        background.dispose();
+        board.dispose();
+        leader.dispose();
     }
 }

@@ -154,18 +154,22 @@ public class FirstScreen implements Screen {
         warningDialog.getContentTable().setBackground(dialog);
 
         Label message1 = new Label("Continue without saving data?", customLabel);
-        Label message2 = new Label("You can sign up later to keep your progress.", customLabel);
+        Label message2 = new Label("You can log in or sign up later\n to keep your progress.", customLabel);
+        Label message3 = new Label("Remember that NONE of your \nrecords will be saved.", customLabel);
         game.dialogTextAnimation(message1, false);
         game.dialogTextAnimation(message2, false);
+        game.dialogTextAnimation(message3, false);
         warningDialog.text(message1);
         warningDialog.getContentTable().row();
         warningDialog.text(message2);
+        warningDialog.getContentTable().row();
+        warningDialog.text(message3);
 
         warningDialog.button("Yes", true);
         warningDialog.button("No", false);
         //endregion
 
-        //region Anoymous Button
+        //region Sign up Button
         anoymousButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {

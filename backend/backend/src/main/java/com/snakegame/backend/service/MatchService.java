@@ -18,6 +18,15 @@ public class MatchService {
     public Match saveMatch(Match match) {
         return matchRepository.save(match);
     }
+
+    public List<Match> getAllMatches() {
+        return matchRepository.findAll();
+    }
+
+    public List<Match> getMatchesByUser(User user) {
+        return matchRepository.findByUser(user);
+    }
+
     public UserStatsResponse getUserStats(User user) {
         List<Match> matches = matchRepository.findByUser(user);
 

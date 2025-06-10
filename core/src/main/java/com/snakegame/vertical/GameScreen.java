@@ -69,7 +69,7 @@ public class GameScreen implements Screen {
 
     private Label scoreLabel, startTimeLabel, scoreMessage, playtimeMessage, detailsScoreMessage;
     private BitmapFont font;
-    private boolean isPaused = false, isLoggedIn, hasSavedScore, hasSavedMatch; // Add pause state flag
+    private boolean isPaused = false, isLoggedIn, hasSavedScore, hasSavedMatch;
     private Dialog gameOverDialog, announcingDialog;
     private DateTimeFormatter formatter;
 
@@ -387,7 +387,7 @@ public class GameScreen implements Screen {
         stage.addActor(eatenFoodsTable);
 
         // Time tracking label
-        startTimeLabel = new Label("Start time: hh:mm:ss dd-mm-yy", customLabel);
+        startTimeLabel = new Label("Start time: hh:mm:ss dd-mm-yy", customLabel1);
         startTimeLabel.setPosition(backgroundImage.getX(), backgroundImage.getY() + 100);
         stage.addActor(startTimeLabel);
         //endregion
@@ -932,6 +932,10 @@ public class GameScreen implements Screen {
             }
         });
 
+        resetTexture.dispose();
+        soundOffTexture.dispose();
+        soundOnTexture.dispose();
+        backgroundTexture.dispose();
         backgroundTexture.dispose();
         snakeHeadTexture.dispose();
         snakeBodyTexture.dispose();

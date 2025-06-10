@@ -1,19 +1,35 @@
 package com.snakegame.vertical;
 
 public class MatchDTO {
-    private Long userId;
+    private long id;
+    private UserDTO user;
     private int totalScore;
     private int playTime;
     private String normalFoodCount;
     private String specialFoodCount;
     private String goldenFoodCount;
 
-    public Long getUserId() {
-        return userId;
+    public MatchDTO() {}
+
+    public MatchDTO(MatchDTO match){
+        this.id = match.id;
+        this.user = match.user;
+        this.totalScore = match.totalScore;
+        this.normalFoodCount = match.normalFoodCount;
+        this.specialFoodCount = match.specialFoodCount;
+        this.goldenFoodCount = match.goldenFoodCount;
+        this.playTime = match.playTime;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public long getId() { return id; }
+    public void setId(long id) { this.id = id; }
+
+    public UserDTO getUser() {
+        return user;
+    }
+
+    public void setUserId(UserDTO user) {
+        this.user = user;
     }
 
     public int getTotalScore() {

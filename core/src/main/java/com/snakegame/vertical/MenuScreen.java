@@ -10,24 +10,24 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class MenuScreen implements Screen {
-    private Texture mainBg, logout, login, avatar;
+    private Texture mainBg, logout, login, avatar, dialogTexture;
     private Image baseBg, avatarImage;
     private ImageButton play, leader, prize, setting, about, logoutBtn, loginBtn, avatarBtn;
     private SnakeGame game;
     private Stage stage;
     private Viewport viewport;
-    private Texture playButton, prizeButton, leaderButton, settingButton, aboutButton, avatarTexture;
+    private Texture playButton, prizeButton, leaderButton, settingButton, aboutButton;
     private boolean isLoggedIn;
+    private Dialog warningDialog;
 
     public MenuScreen(SnakeGame game){
         this.game = game;
@@ -36,13 +36,29 @@ public class MenuScreen implements Screen {
         stage = new Stage(viewport, game.batch);
         Gdx.input.setInputProcessor(stage);
         this.isLoggedIn = game.getLoggedIn();
+        Skin skin = new Skin(Gdx.files.internal("uiskin.json"));
 
         mainBg = new Texture("backgrounds\\menubg.jpg");
         baseBg = new Image(mainBg);
         game.appearTransition(baseBg);
         stage.addActor(baseBg);
-
         System.out.println("LOGGED IN (MENU): " + isLoggedIn);
+
+        Label.LabelStyle customLabel = new Label.LabelStyle();
+        customLabel.font = game.theSmallFont;
+        customLabel.fontColor = Color.BLACK;
+
+        //region Warning Dialog
+        dialogTexture = new Texture("backgrounds\\table.png");
+        TextureRegionDrawable dialog = new TextureRegionDrawable(new TextureRegion(dialogTexture));
+        warningDialog = new Dialog("WARNING DIALOG", skin);
+        warningDialog.getContentTable().setBackground(dialog);
+        Table content2 = warningDialog.getContentTable();
+        Label warningMessage = new Label("You must log in to see this!", customLabel);
+        Label warningMessage2 = new Label("Please log in or sign up \nif you don't have account yet!", customLabel);
+        content2.add(warningMessage).center().row();
+        content2.add(warningMessage2).center();
+        //endregion
 
         //region Play button
         playButton = new Texture("buttons\\play2.png");
@@ -88,20 +104,31 @@ public class MenuScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
-                baseBg.addAction(Actions.sequence(
-                    Actions.parallel(
-                        Actions.fadeOut(0.5f),
-                        Actions.scaleTo(1.2f, 1.2f, 0.5f),
-                        Actions.run(() -> leader.addAction(Actions.fadeOut(0.5f))),
-                        Actions.run(() -> play.addAction(Actions.fadeOut(0.5f))),
-                        Actions.run(() -> setting.addAction(Actions.fadeOut(0.5f))),
-                        Actions.run(() -> about.addAction(Actions.fadeOut(0.5f))),
-                        Actions.run(() -> prize.addAction(Actions.moveBy(500, 0, 0.5f)))
-                    ),
-                    Actions.run(() -> {
-                        game.setScreen(new PrizeScreen(game));
-                    })
-                ));
+
+                if(!isLoggedIn){
+                    warningDialog.show(stage);
+                    Timer.schedule(new Timer.Task() {
+                        @Override
+                        public void run() {
+                            warningDialog.hide();
+                        }
+                    }, 2f);
+                } else {
+                    baseBg.addAction(Actions.sequence(
+                        Actions.parallel(
+                            Actions.fadeOut(0.5f),
+                            Actions.scaleTo(1.2f, 1.2f, 0.5f),
+                            Actions.run(() -> leader.addAction(Actions.fadeOut(0.5f))),
+                            Actions.run(() -> play.addAction(Actions.fadeOut(0.5f))),
+                            Actions.run(() -> setting.addAction(Actions.fadeOut(0.5f))),
+                            Actions.run(() -> about.addAction(Actions.fadeOut(0.5f))),
+                            Actions.run(() -> prize.addAction(Actions.moveBy(500, 0, 0.5f)))
+                        ),
+                        Actions.run(() -> {
+                            game.setScreen(new PrizeScreen(game));
+                        })
+                    ));
+                }
             }
         });
         //endregion
@@ -119,20 +146,31 @@ public class MenuScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
-                baseBg.addAction(Actions.sequence(
-                    Actions.parallel(
-                        Actions.fadeOut(0.5f),
-                        Actions.scaleTo(1.2f, 1.2f, 0.5f),
-                        Actions.run(() -> play.addAction(Actions.fadeOut(0.5f))),
-                        Actions.run(() -> prize.addAction(Actions.fadeOut(0.5f))),
-                        Actions.run(() -> setting.addAction(Actions.fadeOut(0.5f))),
-                        Actions.run(() -> about.addAction(Actions.fadeOut(0.5f))),
-                        Actions.run(() -> leader.addAction(Actions.moveBy(500, 0, 0.5f)))
-                    ),
-                    Actions.run(() -> {
-                        game.setScreen(new LeaderScreen(game));
-                    })
-                ));
+
+                if(!isLoggedIn){
+                    warningDialog.show(stage);
+                    Timer.schedule(new Timer.Task() {
+                        @Override
+                        public void run() {
+                            warningDialog.hide();
+                        }
+                    }, 2f);
+                } else {
+                    baseBg.addAction(Actions.sequence(
+                        Actions.parallel(
+                            Actions.fadeOut(0.5f),
+                            Actions.scaleTo(1.2f, 1.2f, 0.5f),
+                            Actions.run(() -> play.addAction(Actions.fadeOut(0.5f))),
+                            Actions.run(() -> prize.addAction(Actions.fadeOut(0.5f))),
+                            Actions.run(() -> setting.addAction(Actions.fadeOut(0.5f))),
+                            Actions.run(() -> about.addAction(Actions.fadeOut(0.5f))),
+                            Actions.run(() -> leader.addAction(Actions.moveBy(500, 0, 0.5f)))
+                        ),
+                        Actions.run(() -> {
+                            game.setScreen(new LeaderScreen(game));
+                        })
+                    ));
+                }
             }
         });
         //endregion
@@ -276,11 +314,6 @@ public class MenuScreen implements Screen {
         }
     }
 
-    public void setAvatarImage(String image){
-        avatarTexture = new Texture(image);
-        TextureRegionDrawable avatarDrawable = new TextureRegionDrawable(new TextureRegion(avatarTexture));
-        avatarImage = new Image(avatarDrawable);
-    }
     @Override
     public void show() {
 
@@ -319,6 +352,9 @@ public class MenuScreen implements Screen {
     public void dispose() {
         stage.dispose();
         mainBg.dispose();
+        login.dispose();
+        logout.dispose();
+        avatar.dispose();
         playButton.dispose();
         prizeButton.dispose();
         leaderButton.dispose();

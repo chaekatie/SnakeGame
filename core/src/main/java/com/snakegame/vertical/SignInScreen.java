@@ -148,7 +148,7 @@ public class SignInScreen implements Screen {
                     @Override
                     public void onSuccess(String token) {
                         loginSuccessful = true;
-                        game.setLoggedIn(GameApi.getLoginFlag());
+                        game.setLoggedIn(true);
                         successDialog.show(stage);
                         System.out.println("Login success. Token: " + token);
                         game.setUsername(user);

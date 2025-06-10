@@ -93,7 +93,6 @@ public class SnakeGame extends Game {
 
     @Override
     public void create() {
-        //Load background music
         batch = new SpriteBatch();
         viewport = new FitViewport(V_WIDTH, V_HEIGHT);
         backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("sounds\\bgmusic.mp3"));

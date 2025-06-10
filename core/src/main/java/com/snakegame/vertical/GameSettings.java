@@ -50,9 +50,8 @@ public class GameSettings implements Screen {
         Gdx.input.setInputProcessor(stage);
         skin = new Skin(Gdx.files.internal("uiskin.json"));
         hasChoseDifficulty = false;
-        hasChoseMap = false;  // Initialize map choice flag
+        hasChoseMap = false;
 
-        // Set default mode (with border)
         GameApi.setBorderlessMode(false);
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Montserrat-Bold.ttf"));
@@ -422,25 +421,6 @@ public class GameSettings implements Screen {
         });
         stage.addActor(playButton);
         //endregion
-    }
-
-    private void createDifficultyDialog() {
-        String[] options = {"EASY", "MEDIUM", "HARD"};
-        int choice = JOptionPane.showOptionDialog(null,
-            "Select Difficulty",
-            "Difficulty Selection",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            options,
-            options[1]); // Default to MEDIUM
-
-        if (choice != JOptionPane.CLOSED_OPTION) {
-            game.setCurrentDifficulty(SnakeGame.Difficulty.valueOf(options[choice]));
-        } else {
-            // If user closes dialog, default to MEDIUM
-            game.setCurrentDifficulty(SnakeGame.Difficulty.MEDIUM);
-        }
     }
 
     private void styleCheckbox(CheckBox checkbox){

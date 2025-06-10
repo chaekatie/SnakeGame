@@ -25,7 +25,7 @@ import javax.swing.text.View;
 public class AboutScreen implements Screen {
     private SnakeGame game;
     private Stage stage;
-    private Texture background, bubble, bubble1,bubble2, play, team, gamee, about;
+    private Texture background, bubble, bubble1, bubble2, play, team, gamee, about;
     private Image theBackground, bubbleLogo, bubble1Logo, bubble2Logo, playLogo, teamLogo, gameLogo, aboutLogo;
     private Viewport viewport;
     private ImageButton backButton;

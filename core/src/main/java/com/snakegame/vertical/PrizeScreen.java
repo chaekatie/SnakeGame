@@ -28,14 +28,17 @@ public class PrizeScreen implements Screen {
     private SnakeGame game;
     private Stage stage;
     private Viewport viewport;
-    private Texture background, achievement, board;
+    private Texture background, achievement, board, record, detail;
     private Image backgroundImage, achievementLogo, boardImage;
-    private ImageButton backButton, globalButton;
-    private Label.LabelStyle customLabel;
+    private ImageButton backButton, recordButton, detailButton;
+    private Label.LabelStyle customLabel, customLabel2;
     private Skin skin;
     private Table rowsTable;
     private boolean isLoggedIn;
     private Dialog matchDetailsDialog;
+    private TextureRegionDrawable dialogDrawble;
+    private int veryTotalScores, deadTimes, playTimes;
+    private Label totalScores, totalDie, totalPlaytime;
 
     public PrizeScreen(SnakeGame game){
         this.game = game;
@@ -49,16 +52,20 @@ public class PrizeScreen implements Screen {
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Montserrat-Bold.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter param = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        param.size = 30;
+        param.size = 32;
         param.color = Color.BLACK;
         BitmapFont myFont = generator.generateFont(param);
         generator.dispose();
 
         Texture dialogTex = new Texture("backgrounds\\table.png");
-        TextureRegionDrawable dialogDrawble = new TextureRegionDrawable(new TextureRegion(dialogTex));
+        dialogDrawble = new TextureRegionDrawable(new TextureRegion(dialogTex));
 
         customLabel = new Label.LabelStyle();
-        customLabel.font = myFont;
+        customLabel.font = game.theBigFont;
+        customLabel2 = new Label.LabelStyle();
+        customLabel2.font = game.theSmallFont;
+
+        veryTotalScores = deadTimes = playTimes = 0;
 
         rowsTable = new Table();
         Table myScoresTable = new Table();
@@ -71,8 +78,10 @@ public class PrizeScreen implements Screen {
         game.appearTransition(backgroundImage);
         stage.addActor(backgroundImage);
 
-        board = new Texture("backgrounds\\bgempty.png");
+        board = new Texture("backgrounds\\emptybg_square.png");
         boardImage = new Image(new TextureRegionDrawable(new TextureRegion(board)));
+        boardImage.setPosition(backgroundImage.getX() + 80, backgroundImage.getY() + 600);
+        stage.addActor(boardImage);
         //endregion
 
         //region Back button
@@ -89,30 +98,56 @@ public class PrizeScreen implements Screen {
         //endregion
 
         //region Scores Table
-        float widthh = boardImage.getPrefWidth();
-        float heightt = boardImage.getPrefHeight();
+        float widthh = boardImage.getWidth();
+        float heightt = boardImage.getHeight();
 
-        ScrollPane scrollPane = declareScrollPane(rowsTable, widthh - 40, heightt - 150);
-        scrollContainer.add(scrollPane).size(widthh - 40, heightt - 150).pad(0, -30, 50, 20);
-
-        boardStack.add(boardImage);
-        boardStack.setSize(widthh - 40, heightt - 120);
+        ScrollPane scrollPane = declareScrollPane(rowsTable, widthh - 100, heightt - 100);
+        scrollContainer.add(scrollPane).size(widthh - 100, heightt - 100).pad(0, 10, 50, 20);
+        boardStack.setSize(widthh - 100, heightt - 100);
         boardStack.add(scrollContainer);
 
-        myScoresTable.setFillParent(true);
-        myScoresTable.add(boardStack).pad(0, 10, 10, 5);
+        myScoresTable.add(boardStack).pad(10, 10, 10, 5);
+        myScoresTable.pack();
+        myScoresTable.setPosition(backgroundImage.getX() + 100, backgroundImage.getY() + 600);
         stage.addActor(myScoresTable);
-        myScoresTable.setY(myScoresTable.getY() + 50);
         //endregion
 
         //region Achivement logo
         achievement = new Texture("logos\\achievement.png");
         achievementLogo = new Image(new TextureRegionDrawable(new TextureRegion(achievement)));
-        achievementLogo.setPosition(backgroundImage.getX() + 150, backgroundImage.getY() + 1000);
+        achievementLogo.setPosition(backgroundImage.getX() + 150, backgroundImage.getY() + 1090);
         stage.addActor(achievementLogo);
         //endregion
 
-        loadMyScores();
+        //region Your Records button
+        record = new Texture("buttons\\record.png");
+        recordButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(record)));
+        recordButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.clicking.play(2f);
+                loadMyScores();
+            }
+        });
+        recordButton.setPosition(backButton.getX() + 400, backgroundImage.getY() + 450);
+        stage.addActor(recordButton);
+        //endregion
+
+        loadMatchDetail();
+
+        //region Match details button
+        detail = new Texture("buttons\\detail.png");
+        detailButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(detail)));
+        detailButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.clicking.play(2f);
+                loadMatchDetail();
+            }
+        });
+        detailButton.setPosition(backgroundImage.getX() + 100, backgroundImage.getY() + 450);
+        stage.addActor(detailButton);
+        //endregion
 
         //region Filter Achivement Button
         Texture filter = new Texture("buttons\\filter.png");
@@ -122,10 +157,29 @@ public class PrizeScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
-                loadMyScores();
+                loadMatchDetail();
             }
         });
         stage.addActor(filterBtn);
+        //endregion
+
+        //region Summary
+        Texture frame = new Texture("avatars\\flowerframe.png");
+        Image frameImage = new Image(new TextureRegionDrawable(new TextureRegion(frame)));
+        frameImage.setSize(400, 500);
+        frameImage.setPosition(backgroundImage.getX() + 180, backgroundImage.getY() + 200);
+        //stage.addActor(frameImage);
+
+        totalDie = new Label("Total Dead: " + deadTimes, customLabel);
+        totalScores = new Label("Total Scores: " + veryTotalScores, customLabel);
+        totalPlaytime = new Label("Total Playing times: " + playTimes, customLabel);
+        Table summaryTable = new Table();
+        summaryTable.add(totalDie).row();
+        summaryTable.add(totalScores).row();
+        summaryTable.add(totalPlaytime).row();
+        summaryTable.pack();
+        summaryTable.setPosition(backgroundImage.getX() + 130, backgroundImage.getY() + 220);
+        stage.addActor(summaryTable);
         //endregion
 
         //region Choose Filter
@@ -161,60 +215,6 @@ public class PrizeScreen implements Screen {
             }
         });
         //endregion
-
-        // region Match Details Dialog
-        matchDetailsDialog = new Dialog("MATCH DETAILS", skin) {
-            @Override
-            protected void result(Object object) {
-                if (Boolean.TRUE.equals(object)) {
-                        matchDetailsDialog.hide();
-                } else {
-                    // Reset game before going back to menu
-                    GameApi.resetGame(new GameApi.GameStateCallback() {
-                        @Override
-                        public void onSuccess(GameStateDTO gameState) {
-                            Gdx.app.postRunnable(() -> {
-                                game.setScreen(new MenuScreen(game));
-                            });
-                        }
-
-                        @Override
-                        public void onError(Throwable t) {
-                            Gdx.app.error("GameScreen", "Error resetting game before menu", t);
-                            Gdx.app.postRunnable(() -> {
-                                game.setScreen(new MenuScreen(game));
-                            });
-                        }
-                    });
-                }
-            }
-        };
-
-        matchDetailsDialog.getContentTable().setBackground(dialogDrawble);
-        Label message = new Label("MATCH DETAILS!",customLabel);
-        Label scoreMessage = new Label("Total Score: 0", customLabel);
-        Label playtimeMessage = new Label("Playing time: ", customLabel);
-        Label food1Message = new Label ("Normal Food: 0 Apple", customLabel);
-        Label food2Message = new Label ("Special Food: 0 Grape", customLabel);
-        Label food3Message = new Label ("Golden Food: 0 Strawberry", customLabel);
-
-        matchDetailsDialog.text(message).center();
-        matchDetailsDialog.getContentTable().row();
-        matchDetailsDialog.text(scoreMessage).center();
-        matchDetailsDialog.getContentTable().row();
-        matchDetailsDialog.text(playtimeMessage).center();
-        matchDetailsDialog.getContentTable().row();
-        matchDetailsDialog.text(food1Message).center();
-        matchDetailsDialog.getContentTable().row();
-        matchDetailsDialog.text(food2Message).center();
-        matchDetailsDialog.getContentTable().row();
-        matchDetailsDialog.text(food3Message).center();
-
-        matchDetailsDialog.button("Close", true);
-        //endregion
-
-        // endregion
-
     }
 
     public ScrollPane declareScrollPane(Table table, float width, float height){
@@ -240,7 +240,7 @@ public class PrizeScreen implements Screen {
                 for (int i = 0; i < myScores.length; i++){
                     ScoreDTO score = myScores[i];
                     rowsTable.row();
-                    rowsTable.add(createUserRow(i+1, score.getScore(), score.getTime())).width(280).height(50).left().row();
+                    rowsTable.add(createUserRow(i+1, score.getScore(), score.getTime())).width(280).height(50).padBottom(20).row();
                 }
             }
 
@@ -253,17 +253,41 @@ public class PrizeScreen implements Screen {
     }
 
     private void loadMatchDetail(){
+        rowsTable.clear();
 
+        GameApi.getGameMatch(new GameApi.GetMatchCallback() {
+            @Override
+            public void onSuccess(MatchDTO[] matchDetails) {
+                if (matchDetails.length == 0) {
+                    Label emptyLabel = new Label("You have no match details yet!", customLabel);
+                    rowsTable.add(emptyLabel);
+                    return;
+                }
+
+                for (int i = 0; i < matchDetails.length; i++){
+                    MatchDTO match = matchDetails[i];
+
+                    veryTotalScores += match.getTotalScore();
+                    deadTimes += 1;
+                    playTimes += match.getPlayTime();
+
+                    totalDie.setText("Total Dead: " + deadTimes);
+                    totalScores.setText("Total Scores: " + veryTotalScores);
+                    totalPlaytime.setText("Total Playing times: " + playTimes);
+
+                    rowsTable.row();
+                    rowsTable.add(createUserRow(i+1, match)).width(280).height(50).left().row();
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.out.println("ERROR LOADING THE MATCH DETAILS " + t.getMessage());
+            }
+        });
     }
 
-    private String formatRank(int rank) {
-        if (rank == 1) return "1st";
-        if (rank == 2) return "2nd";
-        if (rank == 3) return "3rd";
-        return rank + "th";
-    }
-
-    public Table createUserRow(int rank, int score, String time) {
+    public Table createUserRow(int rank, MatchDTO match) {
         Table row = new Table();
         row.defaults().pad(5).height(60);
 
@@ -273,10 +297,10 @@ public class PrizeScreen implements Screen {
         Label rankLabel = new Label(String.valueOf(rank), customLabel);
         rankLabel.setAlignment(Align.left);
 
-        Label scoreLabel = new Label(String.valueOf(score), customLabel);
+        Label scoreLabel = new Label(String.valueOf(match.getTotalScore()), customLabel);
         scoreLabel.setAlignment(Align.left);
 
-        Label timeLabel = new Label(time, customLabel);
+        Label timeLabel = new Label(String.valueOf(match.getPlayTime()), customLabel);
         timeLabel.setAlignment(Align.left);
 
         // Add double-click listener
@@ -288,9 +312,8 @@ public class PrizeScreen implements Screen {
             public boolean touchDown(InputEvent event, float x, float y, int pointer, int button) {
                 long currentTime = TimeUtils.millis();
                 if (currentTime - lastClickTime < DOUBLE_CLICK_INTERVAL) {
-                    // Detected double click
-                    System.out.println("Double-clicked row: rank=" + rank + ", score=" + score);
-                    // Trigger any action here — open dialog, replay game, etc.
+                    System.out.println("Double-clicked row: rank=" + rank);
+                    showMatchDetailsDialog(match);
                 }
                 lastClickTime = currentTime;
                 return true;
@@ -298,9 +321,58 @@ public class PrizeScreen implements Screen {
         });
 
 
-        row.add(rankLabel).width(30).pad(10,0,20,20);
-        row.add(timeLabel).width(300).pad(10,10,10,30);
-        row.add(scoreLabel).width(80).pad(10,30,10,10);
+        row.add(rankLabel).width(50).pad(10,0,20,20);
+        row.add(timeLabel).width(100).pad(10,10,10,20);
+        row.add(scoreLabel).width(200).pad(10,10,10,10);
+        return row;
+    }
+
+    private void showMatchDetailsDialog(MatchDTO match) {
+        matchDetailsDialog  = new Dialog("MATCH DETAILS", skin);
+        matchDetailsDialog.getContentTable().setBackground(dialogDrawble);
+
+        Label message = new Label("MATCH DETAILS", customLabel2);
+        Label scoreMessage = new Label("Total Score: " + match.getTotalScore(), customLabel2);
+        Label playtimeMessage = new Label("Playing time: " + match.getPlayTime() + "s", customLabel2);
+        Label food1Message = new Label("Normal Food: " + match.getNormalFoodCount(), customLabel2);
+        Label food2Message = new Label("Special Food: " + match.getSpecialFoodCount(), customLabel2);
+        Label food3Message = new Label("Golden Food: " + match.getGoldenFoodCount(), customLabel2);
+
+        matchDetailsDialog.text(message).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(scoreMessage).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(playtimeMessage).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(food1Message).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(food2Message).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(food3Message).center();
+        matchDetailsDialog.button("Close", true);
+
+        matchDetailsDialog.show(stage);
+    }
+
+    public Table createUserRow(int rank, int score, String time) {
+        Table row = new Table();
+        row.defaults().pad(5).height(60);
+
+        Color bgColor = new Color(MathUtils.random(), MathUtils.random(), MathUtils.random(), 0.2f);
+        row.setBackground(skin.newDrawable("white", bgColor));
+
+        Label rankLabel = new Label(String.valueOf(rank), customLabel2);
+        rankLabel.setAlignment(Align.left);
+
+        Label scoreLabel = new Label(String.valueOf(score), customLabel2);
+        scoreLabel.setAlignment(Align.left);
+
+        Label timeLabel = new Label(time, customLabel2);
+        timeLabel.setAlignment(Align.left);
+
+        row.add(rankLabel).width(30).pad(10,10,10,20);
+        row.add(timeLabel).width(300).pad(10,10,10,0);
+        row.add(scoreLabel).width(80).pad(10,10,10,10);
         return row;
     }
 
@@ -394,6 +466,11 @@ public class PrizeScreen implements Screen {
 
     @Override
     public void dispose() {
-
+        board.dispose();
+        achievement.dispose();
+        record.dispose();
+        detail.dispose();
+        background.dispose();
+        stage.dispose();
     }
 }

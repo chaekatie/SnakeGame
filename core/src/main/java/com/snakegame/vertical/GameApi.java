@@ -64,6 +64,11 @@ public class GameApi {
         void onError(Throwable t);
     }
 
+    public interface GetMatchCallback {
+        void onSuccess(MatchDTO[] matchDetail);
+        void onError(Throwable t);
+    }
+
     public interface ScoreFilterCallback {
         void onSuccess(UserHighScoreDTO[] scores);
         void onError(Throwable t);
@@ -836,6 +841,49 @@ public class GameApi {
             @Override
             public void cancelled() {
                 Gdx.app.postRunnable(() -> callback.onError(new Exception("Request Cancelled!")));
+            }
+        });
+    }
+
+    public static void getGameMatch(GetMatchCallback callback){
+        String token = getAuthToken();
+        System.out.println("TOKEN: " + token);
+        if (token.isEmpty()) {
+            System.out.println("GameApi" + "Not authenticated. Please login first.");
+            return;
+        }
+
+        HttpRequestBuilder builder = new HttpRequestBuilder();
+        HttpRequest request = builder.newRequest()
+            .method("GET")
+            .url(BASE_URL_4 + "/me")
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer " + token)
+            .build();
+
+        Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
+            @Override
+            public void handleHttpResponse(HttpResponse httpResponse) {
+                try {
+                    String json = httpResponse.getResultAsString();
+                    int statusCode = httpResponse.getStatus().getStatusCode();
+                    System.out.println("STATUS CODE: " + statusCode);
+                    System.out.println("JSON RESPONSE: " + json);
+                    MatchDTO[] matchDetails = new Json().fromJson(MatchDTO[].class, json);
+                    Gdx.app.postRunnable(() -> callback.onSuccess(matchDetails));
+                } catch (Exception e) {
+                    Gdx.app.postRunnable(() -> callback.onError(e));
+                }
+            }
+
+            @Override
+            public void failed(Throwable t) {
+                Gdx.app.postRunnable(() -> callback.onError(t));
+            }
+
+            @Override
+            public void cancelled() {
+                Gdx.app.postRunnable(() -> callback.onError(new Exception("Request cancelled")));
             }
         });
     }
