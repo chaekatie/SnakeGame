@@ -103,7 +103,7 @@ public class GameSettings implements Screen {
         backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 game.setScreen(new MenuScreen(game));
             }
         });
@@ -168,12 +168,17 @@ public class GameSettings implements Screen {
                                     warningDialog.hide();
                                 }
                             }, 1f);
+                            clickCounts.set(index, 0); // Reset click count if can't select
                             return;
                         }
                     } else if(currentClicks == 2){
                         selectedFoods.removeValue(food, false);
                         foodImage.setScale(1.3f);
-                    } else { System.out.println("Multiple clicks (" + currentClicks + ") on " + food); }
+                        clickCounts.set(index, 0); // Reset click count after deselection
+                    } else { 
+                        System.out.println("Multiple clicks (" + currentClicks + ") on " + food);
+                        clickCounts.set(index, 0); // Reset click count if too many clicks
+                    }
                 }
             });
             foodsTable.add(foodImage).pad(20);
@@ -228,16 +233,27 @@ public class GameSettings implements Screen {
             layoutImage.addListener(new ClickListener() {
                 @Override
                 public void clicked(InputEvent event, float x, float y) {
-                    int currentClicks = clickCounts2.get(index) + 1;
-                    clickCounts2.set(index, currentClicks);
-
-                    System.out.println("LAYOUT CHOSEN: " + layout);
-                    if(currentClicks == 1){
-                        selectedLayout = layout;
-                        layoutImage.setScale(2f);
-                    } else if(currentClicks == 2){
+                    // If clicking the currently selected layout, deselect it
+                    if (selectedLayout == layout) {
+                        selectedLayout = null;
                         layoutImage.setScale(1.3f);
-                    } else { System.out.println("Multiple clicks (" + currentClicks + ") on " + layout); }
+                        return;
+                    }
+
+                    // If there was a previously selected layout, reset its scale
+                    if (selectedLayout != null) {
+                        for (int j = 0; j < layoutTypes.length; j++) {
+                            if (layoutTypes[j] == selectedLayout) {
+                                layoutsImage.get(j).setScale(1.3f);
+                                break;
+                            }
+                        }
+                    }
+
+                    // Select the new layout
+                    selectedLayout = layout;
+                    layoutImage.setScale(2f);
+                    System.out.println("LAYOUT CHOSEN: " + layout);
                 }
             });
             layoutsTable.add(layoutImage).pad(20);
@@ -269,7 +285,7 @@ public class GameSettings implements Screen {
         chooseSpeed.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 //createDifficultyDialog();
             }
         });
@@ -386,7 +402,7 @@ public class GameSettings implements Screen {
         playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 System.out.println("SELECTED FOOD: " + selectedFoods);
                 if(selectedFoods.size != 3 && selectedFoods.size > 0 ){
                     System.out.println("You need to choose 3 foods.");

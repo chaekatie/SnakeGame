@@ -100,7 +100,7 @@ public class FirstScreen implements Screen {
         loginButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 background.addAction(Actions.sequence(
                     Actions.parallel(
                         Actions.fadeOut(0.5f),
@@ -173,7 +173,7 @@ public class FirstScreen implements Screen {
         anoymousButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 warningDialog.show(stage);
             }
         });

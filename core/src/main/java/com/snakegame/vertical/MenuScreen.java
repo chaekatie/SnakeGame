@@ -42,6 +42,7 @@ public class MenuScreen implements Screen {
         baseBg = new Image(mainBg);
         game.appearTransition(baseBg);
         stage.addActor(baseBg);
+
         System.out.println("LOGGED IN (MENU): " + isLoggedIn);
 
         Label.LabelStyle customLabel = new Label.LabelStyle();
@@ -72,7 +73,7 @@ public class MenuScreen implements Screen {
         play.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 baseBg.addAction(Actions.sequence(
                     Actions.parallel(
                         Actions.fadeOut(0.5f),
@@ -103,7 +104,7 @@ public class MenuScreen implements Screen {
         prize.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
 
                 if(!isLoggedIn){
                     warningDialog.show(stage);
@@ -145,7 +146,7 @@ public class MenuScreen implements Screen {
         leader.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
 
                 if(!isLoggedIn){
                     warningDialog.show(stage);
@@ -187,7 +188,7 @@ public class MenuScreen implements Screen {
         setting.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 baseBg.addAction(Actions.sequence(
                     Actions.parallel(
                         Actions.fadeOut(0.5f),
@@ -218,7 +219,7 @@ public class MenuScreen implements Screen {
         about.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 baseBg.addAction(Actions.sequence(
                     Actions.parallel(
                         Actions.fadeOut(0.5f),
@@ -245,7 +246,7 @@ public class MenuScreen implements Screen {
         logoutBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 GameApi.clearAuthToken();
                 game.setScreen(new FirstScreen(game));
             }
@@ -263,7 +264,7 @@ public class MenuScreen implements Screen {
         loginBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 GameApi.clearAuthToken();
                 game.setScreen(new SignInScreen(game));
             }
@@ -280,7 +281,7 @@ public class MenuScreen implements Screen {
         avatarBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 game.setScreen(new SettingScreen(game));
             }
         });

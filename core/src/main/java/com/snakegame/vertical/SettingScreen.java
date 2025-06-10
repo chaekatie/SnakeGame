@@ -172,7 +172,7 @@ public class SettingScreen implements Screen {
         backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 game.setScreen(new MenuScreen(game));
             }
         });
@@ -187,6 +187,8 @@ public class SettingScreen implements Screen {
             public void changed(ChangeEvent event, Actor actor) {
                 float value = musicSlider.getValue();
                 game.setMusicVolume(value);
+                // Save the music volume preference
+                Gdx.app.getPreferences("MySnakeGamePreferences").putFloat("musicVolume", value).flush();
             }
         });
         musicSlider.setPosition(
@@ -208,7 +210,10 @@ public class SettingScreen implements Screen {
             public void changed(ChangeEvent changeEvent, Actor actor) {
                 float value = sfxSlider.getValue();
                 game.setSfxVolume(value);
-                game.playSound(game.clicking);
+                // Save the SFX volume preference
+                Gdx.app.getPreferences("MySnakeGamePreferences").putFloat("sfxVolume", value).flush();
+                // Play click sound when adjusting volume
+                game.clicking.play(value);
             }
         });
         sfxSlider.setPosition(

@@ -90,7 +90,7 @@ public class PrizeScreen implements Screen {
         backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 game.setScreen(new MenuScreen(game));
             }
         });
@@ -156,7 +156,7 @@ public class PrizeScreen implements Screen {
         filterBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 loadMatchDetail();
             }
         });
@@ -215,6 +215,60 @@ public class PrizeScreen implements Screen {
             }
         });
         //endregion
+
+        // region Match Details Dialog
+        matchDetailsDialog = new Dialog("MATCH DETAILS", skin) {
+            @Override
+            protected void result(Object object) {
+                if (Boolean.TRUE.equals(object)) {
+                        matchDetailsDialog.hide();
+                } else {
+                    // Reset game before going back to menu
+                    GameApi.resetGame(new GameApi.GameStateCallback() {
+                        @Override
+                        public void onSuccess(GameStateDTO gameState) {
+                            Gdx.app.postRunnable(() -> {
+                                game.setScreen(new MenuScreen(game));
+                            });
+                        }
+
+                        @Override
+                        public void onError(Throwable t) {
+                            Gdx.app.error("GameScreen", "Error resetting game before menu", t);
+                            Gdx.app.postRunnable(() -> {
+                                game.setScreen(new MenuScreen(game));
+                            });
+                        }
+                    });
+                }
+            }
+        };
+
+        matchDetailsDialog.getContentTable().setBackground(dialogDrawble);
+        Label message = new Label("MATCH DETAILS!",customLabel);
+        Label scoreMessage = new Label("Total Score: 0", customLabel);
+        Label playtimeMessage = new Label("Playing time: ", customLabel);
+        Label food1Message = new Label ("Normal Food: 0 Apple", customLabel);
+        Label food2Message = new Label ("Special Food: 0 Grape", customLabel);
+        Label food3Message = new Label ("Golden Food: 0 Strawberry", customLabel);
+
+        matchDetailsDialog.text(message).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(scoreMessage).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(playtimeMessage).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(food1Message).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(food2Message).center();
+        matchDetailsDialog.getContentTable().row();
+        matchDetailsDialog.text(food3Message).center();
+
+        matchDetailsDialog.button("Close", true);
+        //endregion
+
+        // endregion
+
     }
 
     public ScrollPane declareScrollPane(Table table, float width, float height){

@@ -138,7 +138,7 @@ public class SignInScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 System.out.println("Login button clicked!");
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
 
                 String user = username.getText();
                 String pass = password.getText();
@@ -204,7 +204,7 @@ public class SignInScreen implements Screen {
         backBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 game.setScreen(new FirstScreen(game));
             }
         });
@@ -217,7 +217,7 @@ public class SignInScreen implements Screen {
         signupBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 game.setScreen(new SignUpScreen(game));
             }
         });
@@ -238,7 +238,7 @@ public class SignInScreen implements Screen {
         forgotPassBtn.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 game.setScreen(new ResetPasswordScreen(game, false));
             }
         });
