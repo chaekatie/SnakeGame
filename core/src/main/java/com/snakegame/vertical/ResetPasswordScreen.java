@@ -27,11 +27,11 @@ public class ResetPasswordScreen implements Screen {
     private Viewport viewport;
     private Texture background, board, sendBtn, textbox;
     private Image backgroundImage, boardImage, textBoxImage;
-    private ImageButton backButton, sendButton, sendButton2;
+    private ImageButton backButton, sendButton, sendButton2, sendButton3;
     private Skin skin;
-    private Dialog resetPassDialog, sendEmailDialog;
-    private boolean sendEmailOK, resetPassOK;
-    private TextField emailField, confirmField, passwordField;
+    private Dialog resetPassDialog, checkEmail_OTPDialog;
+    private boolean sendEmailOK, resetPassOK, confirmOTP;
+    private TextField emailField, confirmField, passwordField, otpField;
 
     public ResetPasswordScreen (SnakeGame game, boolean sendEmailOK){
         this.game = game;
@@ -156,23 +156,34 @@ public class ResetPasswordScreen implements Screen {
         Image textBoxImage2 = new Image(new TextureRegionDrawable(new TextureRegion(textbox)));
         textBoxImage2.setHeight(150);
 
-        if(!sendEmailOK){
+        // nếu chưa gửi được mail thì vẫn ở màn hình nhập email
+        if (!sendEmailOK) {
             textBoxImage.setPosition(
                 backgroundImage.getX() + 100,
                 backgroundImage.getY() + 650
             );
         } else {
-            textBoxImage.setPosition(
-                backgroundImage.getX() + 100,
-                backgroundImage.getY() + 740
-            );
+            //nếu gửi đuợc mail rồi thì check xem otp đúng chưa
+            if (!confirmOTP) {
+                //nếu otp ko đúng thì vẫn ở màn hình otp
+                textBoxImage.setPosition(
+                    backgroundImage.getX() + 100,
+                    backgroundImage.getY() + 650
+                );
+            } else {
+                //nếu mã otp đúng rồi thì đến giao diện nhập lại mật khẩu mới
+                textBoxImage.setPosition(
+                    backgroundImage.getX() + 100,
+                    backgroundImage.getY() + 740
+                );
 
-            textBoxImage2.setPosition(
-                backgroundImage.getX() + 100,
-                backgroundImage.getY() + 560
-            );
-            game.imageAnimation(textBoxImage2);
-            stage.addActor(textBoxImage2);
+                textBoxImage2.setPosition(
+                    backgroundImage.getX() + 100,
+                    backgroundImage.getY() + 560
+                );
+                game.imageAnimation(textBoxImage2);
+                stage.addActor(textBoxImage2);
+            }
         }
         game.imageAnimation(textBoxImage);
         stage.addActor(textBoxImage);
@@ -183,8 +194,9 @@ public class ResetPasswordScreen implements Screen {
         sendBtn = new Texture("buttons\\send.png");
         sendButton = new ImageButton(new TextureRegionDrawable(new TextureRegion(sendBtn)));
         sendButton2 = new ImageButton(new TextureRegionDrawable(new TextureRegion(sendBtn)));
+        sendButton3 = new ImageButton(new TextureRegionDrawable(new TextureRegion(sendBtn)));
 
-        if(!sendEmailOK){
+        if (!sendEmailOK) {
             Label theEmail = new Label("Type your email: ", customLabel);
             theEmail.setPosition(
                 backgroundImage.getX() + 130,
@@ -206,56 +218,81 @@ public class ResetPasswordScreen implements Screen {
             );
             stage.addActor(sendButton);
         } else {
-            // lúc reset lại mk mới
-            Label theToken = new Label("New password: ", customLabel);
-            theToken.setPosition(
-                backgroundImage.getX() + 130,
-                backgroundImage.getY() + 880
-            );
-            stage.addActor(theToken);
+            // gửi email oke rồi đến giao diện nhập OTP
+            if (!confirmOTP) {
+                Label theOTP = new Label("Enter OTP code: ", customLabel);
+                theOTP.setPosition(
+                    backgroundImage.getX() + 130,
+                    backgroundImage.getY() + 830
+                );
+                stage.addActor(theOTP);
 
-            Label thePassword = new Label("Confirm password: ", customLabel);
-            thePassword.setPosition(
-                backgroundImage.getX() + 130,
-                backgroundImage.getY() + 700
-            );
-            stage.addActor(thePassword);
+                otpField = new TextField("", textFieldStyle);
+                otpField.setSize(440, 100);
+                otpField.setPosition(
+                    backgroundImage.getX() + 130,
+                    backgroundImage.getY() + 680
+                );
+                stage.addActor(otpField);
 
-            sendButton2.setPosition(
-                backgroundImage.getX() + 420,
-                backgroundImage.getY() + 420
-            );
-            stage.addActor(sendButton2);
+                sendButton3.setPosition(
+                    backgroundImage.getX() + 400,
+                    backgroundImage.getY() + 480
+                );
+                stage.addActor(sendButton3);
 
-            passwordField = new TextField("", textFieldStyle);
-            passwordField.setSize(420, 90);
-            passwordField.setPosition(
-                backgroundImage.getX() + 130,
-                backgroundImage.getY() + 770
-            );
-            stage.addActor(passwordField);
+            } else {
+                //lúc này nhập otp đúng rồi chuyển đến giao diện nhập mk mới
+                Label theToken = new Label("New password: ", customLabel);
+                theToken.setPosition(
+                    backgroundImage.getX() + 130,
+                    backgroundImage.getY() + 880
+                );
+                stage.addActor(theToken);
 
-            confirmField = new TextField("", textFieldStyle);
-            confirmField.setSize(420, 90);
-            confirmField.setPosition(
-                backgroundImage.getX() + 130,
-                backgroundImage.getY() + 590
-            );
-            stage.addActor(confirmField);
+                Label thePassword = new Label("Confirm password: ", customLabel);
+                thePassword.setPosition(
+                    backgroundImage.getX() + 130,
+                    backgroundImage.getY() + 700
+                );
+                stage.addActor(thePassword);
+
+                sendButton2.setPosition(
+                    backgroundImage.getX() + 420,
+                    backgroundImage.getY() + 420
+                );
+                stage.addActor(sendButton2);
+
+                passwordField = new TextField("", textFieldStyle);
+                passwordField.setSize(420, 90);
+                passwordField.setPosition(
+                    backgroundImage.getX() + 130,
+                    backgroundImage.getY() + 770
+                );
+                stage.addActor(passwordField);
+
+                confirmField = new TextField("", textFieldStyle);
+                confirmField.setSize(420, 90);
+                confirmField.setPosition(
+                    backgroundImage.getX() + 130,
+                    backgroundImage.getY() + 590
+                );
+                stage.addActor(confirmField);
+            }
         }
         //endregion
 
         //region Send Email Dialog
-        sendEmailDialog = new Dialog("", skin);
-        sendEmailDialog.getContentTable().setBackground(dialog);
-        Table content = sendEmailDialog.getContentTable();
+        checkEmail_OTPDialog = new Dialog("", skin);
+        checkEmail_OTPDialog.getContentTable().setBackground(dialog);
+        Table content = checkEmail_OTPDialog.getContentTable();
 
         customLabel.font = game.theSmallFont;
         Label message = new Label("", customLabel);
         Label message2 = new Label("Please try again!", customLabel);
 
-        dialogTextAnimation(message, false);
-        dialogTextAnimation(message2, false);
+        dialogTextAnimation(message, true);
+        dialogTextAnimation(message2, true);
 
         content.add(message).center().row();
         content.add(message2).center().row();
@@ -269,42 +306,46 @@ public class ResetPasswordScreen implements Screen {
         Label message3 = new Label("", customLabel);
         Label message4 = new Label("", customLabel);
 
-        dialogTextAnimation(message3, false);
-        dialogTextAnimation(message4, false);
+        dialogTextAnimation(message3, true);
+        dialogTextAnimation(message4, true);
 
         content1.add(message3).center().row();
         content1.add(message4).center().row();
         //endregion
 
+        //khi nhấn button send của giao diện Nhập email
         sendButton.addListener(new ClickListener() {
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Send button clicked!"); // ✅ Step 1: check this logs
+                System.out.println("Send button (Email) clicked!");
                 game.clicking.play(2f);
 
                 String email = emailField.getText();
                 System.out.println("Email: " + email);
-                if(email.isEmpty()){
+                //nếu email chưa được điền thì yêu cầu nhập lại
+                if (email.isEmpty()) {
                     sendEmailOK = false;
-                    Gdx.app.postRunnable(()-> {
+                    checkEmail_OTPDialog.show(stage);
+
+                    Gdx.app.postRunnable(() -> {
                         message.setText("Please fill in your email!");
-                        dialogTextAnimation(message, true);
-                        dialogTextAnimation(message2, true);
-                        sendEmailDialog.show(stage);
+                        dialogTextAnimation(message, false);
+                        dialogTextAnimation(message2, false);
                         Timer.schedule(new Timer.Task() {
                             @Override
                             public void run() {
-                                sendEmailDialog.hide();
+                                checkEmail_OTPDialog.hide();
                             }
                         }, 1f);
                     });
                     return;
                 }
 
+                //logic gọi Api gửi email
                 GameApi.sendEmail(email, new GameApi.SendEmailCallback() {
                     @Override
                     public void onSuccess(String response) {
                         sendEmailOK = true;
-                        sendEmailDialog.show(stage);
+                        checkEmail_OTPDialog.show(stage);
                         System.out.println(response);
 
                         Gdx.app.postRunnable(() -> {
@@ -315,7 +356,7 @@ public class ResetPasswordScreen implements Screen {
                             Timer.schedule(new Timer.Task() {
                                 @Override
                                 public void run() {
-                                    sendEmailDialog.hide();
+                                    checkEmail_OTPDialog.hide();
                                     game.setScreen(new ResetPasswordScreen(game, true));
                                 }
                             }, 1f);
@@ -331,11 +372,11 @@ public class ResetPasswordScreen implements Screen {
                             message.setText(error);
                             dialogTextAnimation(message, false);
                             dialogTextAnimation(message2, false);
-                            sendEmailDialog.show(stage);
+                            checkEmail_OTPDialog.show(stage);
                             Timer.schedule(new Timer.Task() {
                                 @Override
                                 public void run() {
-                                    sendEmailDialog.hide();
+                                    checkEmail_OTPDialog.hide();
                                 }
                             }, 1f);
                         });
@@ -344,31 +385,66 @@ public class ResetPasswordScreen implements Screen {
             }
         });
 
+        //khi nhấn button gửi của Nhập OTP
+        sendButton3.addListener(new ClickListener() {
+            public void clicked(InputEvent event, float x, float y) {
+                System.out.println("Send button (OTP) clicked!");
+                game.clicking.play(2f);
+
+                String otp = otpField.getText();
+                System.out.println("OTP Code: " + otp);
+                //nếu mã otp chưa được điền thì yêu cầu nhập lại
+                if (otp.isEmpty()) {
+                    confirmOTP = false;
+                    checkEmail_OTPDialog.show(stage);
+
+                    Gdx.app.postRunnable(() -> {
+                        message.setText("Please fill in the OTP code!");
+                        dialogTextAnimation(message, false);
+                        dialogTextAnimation(message2, false);
+                        Timer.schedule(new Timer.Task() {
+                            @Override
+                            public void run() {
+                                checkEmail_OTPDialog.hide();
+                            }
+                        }, 1f);
+                    });
+                    return;
+                }
+
+                //nếu Mã OTP được nhập thì m thêm logic API vào đây
+                //ở chỗ success nhớ gắn flag confirmOTP = true và setScreen lại màn hình này để đến UI đặt mk mới
+
+            }
+        });
+
+        // khi nhấn button gửi của reset mật khẩu
         sendButton2.addListener(new ClickListener() {
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Send button of reset dialog clicked!"); // ✅ Step 1: check this logs
+                System.out.println("Send button (reset password) clicked!");
                 game.clicking.play(2f);
 
                 String password = passwordField.getText();
                 String confirm = confirmField.getText();
                 System.out.println("Password: " + password);
                 boolean empty = false, different = false;
-                if(password.isEmpty() || confirm.isEmpty()) {
+                if (password.isEmpty() || confirm.isEmpty()) {
                     empty = true;
                     message3.setText("Fill the required values.");
                 }
-                if(!confirm.equals(password)) {
+                if (!confirm.equals(password)) {
                     different = true;
                     message3.setText("Confirm password must match the new one.");
                 }
 
-                if(empty || different){
+                if (empty || different) {
                     sendEmailOK = false;
-                    Gdx.app.postRunnable(()-> {
+                    resetPassDialog.show(stage);
+
+                    Gdx.app.postRunnable(() -> {
                         message4.setText("Please try again.");
-                        dialogTextAnimation(message3, true);
-                        dialogTextAnimation(message4, true);
-                        resetPassDialog.show(stage);
+                        dialogTextAnimation(message3, false);
+                        dialogTextAnimation(message4, false);
                         Timer.schedule(new Timer.Task() {
                             @Override
                             public void run() {
@@ -378,12 +454,13 @@ public class ResetPasswordScreen implements Screen {
                     });
                     return;
                 }
-
+                //thêm vào logic API cho quên mk ở đây, success nhớ gắn flag=true và setScreen đến màn hình đăng nhập
+/*
 //                GameApi.sendEmail(password, new GameApi.resetPassword(token, password, new GameApi.SendEmailCallback() {
 //                    @Override
 //                    public void onSuccess(String response) {
 //                        sendEmailOK = true;
-//                        sendEmailDialog.show(stage);
+//                        checkEmail_OTPDialog.show(stage);
 //                        System.out.println(response);
 //
 //                        Gdx.app.postRunnable(() -> {
@@ -394,7 +471,7 @@ public class ResetPasswordScreen implements Screen {
 //                            Timer.schedule(new Timer.Task() {
 //                                @Override
 //                                public void run() {
-//                                    sendEmailDialog.hide();
+//                                    checkEmail_OTPDialog.hide();
 //                                    game.setScreen(new ResetPasswordScreen(game, true));
 //                                }
 //                            }, 1f);
@@ -410,11 +487,11 @@ public class ResetPasswordScreen implements Screen {
 //                            message.setText(error);
 //                            dialogTextAnimation(message, false);
 //                            dialogTextAnimation(message2, false);
-//                            sendEmailDialog.show(stage);
+//                            checkEmail_OTPDialog.show(stage);
 //                            Timer.schedule(new Timer.Task() {
 //                                @Override
 //                                public void run() {
-//                                    sendEmailDialog.hide();
+//                                    checkEmail_OTPDialog.hide();
 //                                }
 //                            }, 1f);
 //                        });
@@ -422,18 +499,19 @@ public class ResetPasswordScreen implements Screen {
 //                });
             }
         });
-
-        backButton = game.activateBackButton(backgroundImage);
-        game.buttonAnimation(backButton);
-        backButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
-                game.setScreen(new SignInScreen(game));
+*/
+                backButton = game.activateBackButton(backgroundImage);
+                game.buttonAnimation(backButton);
+                backButton.addListener(new ClickListener() {
+                    @Override
+                    public void clicked(InputEvent event, float x, float y) {
+                        game.clicking.play(2f);
+                        game.setScreen(new SignInScreen(game));
+                    }
+                });
+                stage.addActor(backButton);
             }
         });
-        stage.addActor(backButton);
-
     }
 
     public void dialogTextAnimation(Label text, boolean before){
