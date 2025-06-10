@@ -91,19 +91,12 @@ public class GameApi {
     public static boolean getLoginFlag() { return isLoggedIn; }
 
     public static void fetchGameState(GameStateCallback callback) {
-        String token = getAuthToken();
-        if (token.isEmpty()) {
-            callback.onError(new Exception("Not authenticated. Please login first."));
-            return;
-        }
-
         HttpRequestBuilder requestBuilder = new HttpRequestBuilder();
         HttpRequest request = requestBuilder.newRequest()
             .method("GET")
             .url(BASE_URL + "/state")
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")
-            .header("Authorization", "Bearer " + token)
             .build();
 
         Gdx.app.log("GameApi", "Sending request to: " + BASE_URL + "/state");
@@ -114,11 +107,6 @@ public class GameApi {
                 try {
                     int statusCode = httpResponse.getStatus().getStatusCode();
                     Gdx.app.log("GameApi", "Response status code: " + statusCode);
-
-                    if (statusCode == 403) {
-                        callback.onError(new Exception("Authentication failed. Please login again."));
-                        return;
-                    }
 
                     if (statusCode != 200) {
                         String error = "Server returned status code: " + statusCode;
@@ -176,12 +164,6 @@ public class GameApi {
                     gameState.score = root.getInt("score", 0);
                     gameState.gameOver = root.getBoolean("gameOver", false);
 
-                    Gdx.app.log("GameApi", "Successfully parsed game state:");
-                    Gdx.app.log("GameApi", "- Snake size: " + gameState.snakeBody.size());
-                    Gdx.app.log("GameApi", "- Foods size: " + gameState.foods.size());
-                    Gdx.app.log("GameApi", "- Score: " + gameState.score);
-                    Gdx.app.log("GameApi", "- Game Over: " + gameState.gameOver);
-
                     callback.onSuccess(gameState);
                 } catch (Exception e) {
                     Gdx.app.error("GameApi", "Error parsing game state: " + e.getMessage());
@@ -206,12 +188,6 @@ public class GameApi {
     }
 
     public static void sendDirection(Direction direction) {
-        String token = getAuthToken();
-        if (token.isEmpty()) {
-            Gdx.app.error("GameApi", "Not authenticated. Please login first.");
-            return;
-        }
-
         HttpRequestBuilder requestBuilder = new HttpRequestBuilder();
         String directionJson = "\"" + direction.name() + "\"";
 
@@ -222,26 +198,18 @@ public class GameApi {
             .method("POST")
             .url(BASE_URL + "/direction")
             .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + token)
-            .content(directionJson) // Send as JSON
+            .content(directionJson)
             .build();
-
-        Gdx.app.log("GameApi", "Request URL: " + request.getUrl());
-        Gdx.app.log("GameApi", "Request method: " + request.getMethod());
-        Gdx.app.log("GameApi", "Request headers: " + request.getHeaders());
-        Gdx.app.log("GameApi", "Request content: " + request.getContent());
 
         Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
             @Override
             public void handleHttpResponse(HttpResponse httpResponse) {
                 Gdx.app.log("GameApi", "Direction response status: " + httpResponse.getStatus().getStatusCode());
-                Gdx.app.log("GameApi", "Direction response: " + httpResponse.getResultAsString());
             }
 
             @Override
             public void failed(Throwable t) {
                 Gdx.app.error("GameApi", "Failed to send direction: " + t.getMessage());
-                t.printStackTrace();
             }
 
             @Override
@@ -251,41 +219,16 @@ public class GameApi {
         });
     }
 
-    // Add update and reset methods
     public static void updateGame(GameStateCallback callback) {
-        String token = getAuthToken();
-        if (token.isEmpty()) {
-            callback.onError(new Exception("Not authenticated. Please login first."));
-            return;
-        }
-
         HttpRequest request = new HttpRequestBuilder().newRequest()
             .method("POST")
             .url(BASE_URL + "/update")
             .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + token)
             .build();
-
-        Gdx.app.log("GameApi", "Sending update request to: " + BASE_URL + "/update");
 
         Gdx.net.sendHttpRequest(request, new HttpResponseListener() {
             @Override
             public void handleHttpResponse(HttpResponse httpResponse) {
-                int statusCode = httpResponse.getStatus().getStatusCode();
-                Gdx.app.log("GameApi", "Update response status code: " + statusCode);
-
-                if (statusCode == 403) {
-                    callback.onError(new Exception("Authentication failed. Please login again."));
-                    return;
-                }
-
-                if (statusCode != 200) {
-                    String error = "Update failed with status code: " + statusCode;
-                    Gdx.app.error("GameApi", error);
-                    callback.onError(new Exception(error));
-                    return;
-                }
-
                 fetchGameState(callback);
             }
             @Override
@@ -569,18 +512,11 @@ public class GameApi {
     }
 
     public static void setBorderlessMode(boolean borderless) {
-        String token = getAuthToken();
-        if (token.isEmpty()) {
-            Gdx.app.error("GameApi", "Not authenticated. Please login first.");
-            return;
-        }
-
         HttpRequestBuilder requestBuilder = new HttpRequestBuilder();
         HttpRequest request = requestBuilder.newRequest()
             .method("POST")
             .url(BASE_URL + "/borderless")
             .header("Content-Type", "application/json")
-            .header("Authorization", "Bearer " + token)
             .content(String.valueOf(borderless))
             .build();
 

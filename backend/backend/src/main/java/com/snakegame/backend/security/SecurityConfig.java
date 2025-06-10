@@ -22,11 +22,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // dùng JWT, không session
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/forgot-password", "/reset-password-form**", "/reset-password","/forgot-password","/reset-password-form").permitAll()
-                .requestMatchers("/api/game/reset").permitAll()
-                .requestMatchers("/api/scores/**", "/api/game/**","/api/matches/**").hasRole("USER")
+                .requestMatchers("/api/game/**").permitAll()
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/forgot-password", "/reset-password-form**", "/reset-password", "/forgot-password", "/reset-password-form").permitAll()
+                .requestMatchers("/api/scores/**", "/api/matches/**").hasRole("USER")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

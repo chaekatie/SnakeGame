@@ -49,7 +49,7 @@ public class GameScreen implements Screen {
     private float updateTimer = 0;
     private static final float UPDATE_INTERVAL = 0.15f; // Snake speed
     private float directionChangeCooldown = 0;
-    private static final float DIRECTION_CHANGE_COOLDOWN = 0.05f; // Cooldown between direction changes
+    private static final float DIRECTION_CHANGE_COOLDOWN = 0.02f; //  Faster direction changes
 
     private Table boardTable, topBarTable;
     private Texture resetTexture, soundOnTexture, soundOffTexture, pauseTexture, backgroundTexture;
@@ -585,23 +585,30 @@ public class GameScreen implements Screen {
         // Remove stage input processor temporarily to allow keyboard input
         Gdx.input.setInputProcessor(null);
 
-        // Only process direction changes if cooldown is 0
-        if (directionChangeCooldown <= 0) {
-    	if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+        // Only process direction changes if cooldown is 0 and game is not paused
+        if (directionChangeCooldown <= 0 && !isPaused && currentGameState != null && !currentGameState.gameOver) {
+            Direction currentDirection = null;
+            if (currentGameState.snakeBody != null && currentGameState.snakeBody.size() >= 2) {
+                GameStateDTO.PositionDTO head = currentGameState.snakeBody.get(0);
+                GameStateDTO.PositionDTO neck = currentGameState.snakeBody.get(1);
+                currentDirection = getDirectionFromPositions(head, neck);
+            }
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && currentDirection != Direction.DOWN) {
                 Gdx.app.log("GameScreen", "UP key pressed - sending direction UP");
-            GameApi.sendDirection(Direction.UP);
+                GameApi.sendDirection(Direction.UP);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
-        } else if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+            } else if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN) && currentDirection != Direction.UP) {
                 Gdx.app.log("GameScreen", "DOWN key pressed - sending direction DOWN");
-            GameApi.sendDirection(Direction.DOWN);
+                GameApi.sendDirection(Direction.DOWN);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
-        } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
+            } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && currentDirection != Direction.RIGHT) {
                 Gdx.app.log("GameScreen", "LEFT key pressed - sending direction LEFT");
-            GameApi.sendDirection(Direction.LEFT);
+                GameApi.sendDirection(Direction.LEFT);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
-        } else if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
+            } else if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && currentDirection != Direction.LEFT) {
                 Gdx.app.log("GameScreen", "RIGHT key pressed - sending direction RIGHT");
-            GameApi.sendDirection(Direction.RIGHT);
+                GameApi.sendDirection(Direction.RIGHT);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
             }
         }
@@ -629,6 +636,21 @@ public class GameScreen implements Screen {
 
         // Restore stage input processor for UI elements
         Gdx.input.setInputProcessor(stage);
+    }
+
+    private Direction getDirectionFromPositions(GameStateDTO.PositionDTO from, GameStateDTO.PositionDTO to) {
+        int dx = from.x - to.x;
+        int dy = from.y - to.y;
+
+        // Handle wrapping cases
+        dx = normalizeDelta(dx, cols);
+        dy = normalizeDelta(dy, rows);
+
+        if (dx > 0) return Direction.RIGHT;
+        if (dx < 0) return Direction.LEFT;
+        if (dy > 0) return Direction.UP;
+        if (dy < 0) return Direction.DOWN;
+        return null;
     }
 
     private void drawGameObjects() {
@@ -853,8 +875,13 @@ public class GameScreen implements Screen {
     }
 
     private void saveScores(){
-        GameApi.saveUserScore(game.getUsername(), totalScores, new GameApi.GameScoreCallback() {
+        // Only save scores if user is logged in
+        if (!game.getLoggedIn()) {
+            System.out.println("User not logged in, skipping score save");
+            return;
+        }
 
+        GameApi.saveUserScore(game.getUsername(), totalScores, new GameApi.GameScoreCallback() {
             @Override
             public void onSuccess() {
                 hasSavedScore = true;
