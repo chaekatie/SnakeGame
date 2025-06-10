@@ -78,7 +78,7 @@ public class LeaderScreen implements Screen {
         backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 game.setScreen(new MenuScreen(game));
             }
         });
@@ -120,7 +120,7 @@ public class LeaderScreen implements Screen {
         globalButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 loadAllScores();
             }
         });

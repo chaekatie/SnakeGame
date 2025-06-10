@@ -301,7 +301,7 @@ public class GameScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 System.out.println("sound on button clicked!");
-                game.clicking.play(3f);
+                game.clicking.play(game.getSfxVolume());
                 game.backgroundMusic.setVolume(0f); // Mute music
                 game.snakeHiss.setVolume(game.hissLoopId, 0f); // Mute hiss
                 soundOffButton.setVisible(true);
@@ -315,7 +315,7 @@ public class GameScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 System.out.println("sound off button clicked!");
-                game.clicking.play(3f);
+                game.clicking.play(game.getSfxVolume());
                 game.backgroundMusic.setVolume(0.2f); // Restore music volume
                 game.snakeHiss.setVolume(game.hissLoopId, 2f); // Restore hiss volume
                 soundOnButton.setVisible(true);
@@ -328,7 +328,7 @@ public class GameScreen implements Screen {
         resetButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(3f);
+                game.clicking.play(game.getSfxVolume());
                 // Reset game state
                 resetGame();
             }
@@ -338,7 +338,7 @@ public class GameScreen implements Screen {
         pauseButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(3f);
+                game.clicking.play(game.getSfxVolume());
                 isPaused = !isPaused; // Toggle pause state
                 announcingDialog.show(stage);
             }

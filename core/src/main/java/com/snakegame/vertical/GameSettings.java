@@ -104,7 +104,7 @@ public class GameSettings implements Screen {
         backButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 game.setScreen(new MenuScreen(game));
             }
         });
@@ -286,7 +286,7 @@ public class GameSettings implements Screen {
         chooseSpeed.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 //createDifficultyDialog();
             }
         });
@@ -403,7 +403,7 @@ public class GameSettings implements Screen {
         playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.clicking.play(2f);
+                game.clicking.play(game.getSfxVolume());
                 System.out.println("SELECTED FOOD: " + selectedFoods);
                 if(selectedFoods.size != 3 && selectedFoods.size > 0 ){
                     System.out.println("You need to choose 3 foods.");

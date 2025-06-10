@@ -98,7 +98,7 @@ public class SnakeGame extends Game {
         viewport = new FitViewport(V_WIDTH, V_HEIGHT);
         backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("sounds\\bgmusic.mp3"));
         backgroundMusic.setLooping(true);
-        backgroundMusic.setVolume(0.2f);
+        backgroundMusic.setVolume(musicVolume);
         backgroundMusic.play();
 
         formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy hh:mm:ss a");
@@ -126,12 +126,9 @@ public class SnakeGame extends Game {
 
         //Load sounds
         snakeHiss = Gdx.audio.newSound(Gdx.files.internal("sounds\\hissing.mp3"));
-        if (hissLoopId == -1) {
-            hissLoopId = snakeHiss.loop(sfxVolume);  // Loop with music volume
-            snakeHiss.play();
-        }
+        hissLoopId = snakeHiss.loop(sfxVolume);  // Start with current SFX volume
         clicking = Gdx.audio.newSound(Gdx.files.internal("sounds\\clicking.mp3"));
-        clicking.play(2f);
+        clicking.play(sfxVolume);
 
         // Load food eating sounds
         normalFoodSound = Gdx.audio.newSound(Gdx.files.internal("sounds\\normal_food.mp3"));
@@ -275,8 +272,7 @@ public class SnakeGame extends Game {
     public void setMusicVolume(float volume) {
         musicVolume = volume;
         if (backgroundMusic != null) backgroundMusic.setVolume(volume);
-        if (snakeHiss != null && hissLoopId != -1) snakeHiss.setVolume(hissLoopId, 2f);
-
+        
         Preferences prefs = Gdx.app.getPreferences("MySnakeGamePreferences");
         prefs.putFloat("musicVolume", volume);
         prefs.flush();
@@ -285,6 +281,10 @@ public class SnakeGame extends Game {
     // Method to update sfx volume
     public void setSfxVolume(float volume) {
         sfxVolume = volume;
+        if (snakeHiss != null && hissLoopId != -1) {
+            snakeHiss.setVolume(hissLoopId, volume);
+        }
+        
         Preferences prefs = Gdx.app.getPreferences("MySnakeGamePreferences");
         prefs.putFloat("sfxVolume", volume);
         prefs.flush();
