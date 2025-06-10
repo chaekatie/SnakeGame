@@ -9,15 +9,11 @@ public class OtpVerification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String otpCode; // Đổi từ 'token' thành 'otpCode' cho rõ ràng
+    private String otpCode;
     private LocalDateTime expirationTime;
 
     @OneToOne
     private User user;
-
-    // Có thể thêm mục đích của OTP nếu cần (ví dụ: password_reset, registration_verify)
-    // @Enumerated(EnumType.STRING)
-    // private OtpPurpose otpPurpose;
 
     public Long getId() {
         return id;

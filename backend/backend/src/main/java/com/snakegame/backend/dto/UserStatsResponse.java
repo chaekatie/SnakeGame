@@ -18,11 +18,8 @@ public class UserStatsResponse {
         this.highestScore = highestScore;
     }
 
-    // Default constructor (optional, but good for serialization)
     public UserStatsResponse() {
     }
-
-    // Getters and Setters
 
     public int getTotalMatches() {
         return totalMatches;

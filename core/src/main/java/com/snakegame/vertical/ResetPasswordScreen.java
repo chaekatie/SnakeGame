@@ -544,15 +544,14 @@ public class ResetPasswordScreen implements Screen {
                     public void onSuccess(String response) {
                         Gdx.app.postRunnable(() -> {
                             System.out.println("Request OTP Success: " + response);
-                            // Cập nhật biến instance TRƯỚC KHI tạo màn hình mới
-                            ResetPasswordScreen.this.sendEmailSuccess = true; // <-- Thêm .this để cập nhật biến instance
+
+                            ResetPasswordScreen.this.sendEmailSuccess = true;
                             showDialog(checkEmail_OTPDialog, messageLabel, "Please check your mailbox!", message2Label, "OTP has been sent.");
 
                             Timer.schedule(new Timer.Task() {
                                 @Override
                                 public void run() {
                                     checkEmail_OTPDialog.hide();
-                                    // Truyền các giá trị trạng thái đã cập nhật
                                     game.setScreen(new ResetPasswordScreen(game, ResetPasswordScreen.this.sendEmailSuccess, ResetPasswordScreen.this.verifyOtpSuccess, userEmail));
                                 }
                             }, 1f);
@@ -563,7 +562,6 @@ public class ResetPasswordScreen implements Screen {
                     public void onError(String error) {
                         Gdx.app.postRunnable(() -> {
                             System.err.println("Request OTP Error: " + error);
-                            // Giữ nguyên trạng thái nếu lỗi (hoặc set về false rõ ràng)
                             ResetPasswordScreen.this.sendEmailSuccess = false;
                             String errorMessage = error.contains("Error:") ? error.split("Error:")[1].trim() : "Failed to send OTP.";
                             showDialog(checkEmail_OTPDialog, messageLabel, errorMessage, message2Label, "Please try again.");
@@ -610,11 +608,9 @@ public class ResetPasswordScreen implements Screen {
 
                             System.out.println("Verify OTP Success: " + response);
 
-                            verifyOtpSuccess = true; // Cập nhật trạng thái
+                            verifyOtpSuccess = true;
 
                             showDialog(checkEmail_OTPDialog, messageLabel, "OTP verified successfully!", message2Label, "Now set new password.");
-
-// Sau khi xác thực OTP thành công, chuyển sang màn hình đặt lại mật khẩu
 
                             Timer.schedule(new Timer.Task() {
 
@@ -633,31 +629,17 @@ public class ResetPasswordScreen implements Screen {
                         });
 
                     }
-
-
-
                     @Override
-
                     public void onError(String error) {
-
                         Gdx.app.postRunnable(() -> {
-
                             System.err.println("Verify OTP Error: " + error);
-
-                            verifyOtpSuccess = false; // Giữ nguyên trạng thái nếu lỗi
-
+                            verifyOtpSuccess = false;
                             String errorMessage = error.contains("Error:") ? error.split("Error:")[1].trim() : "Invalid OTP.";
-
                             showDialog(checkEmail_OTPDialog, messageLabel, errorMessage, message2Label, "Please try again.");
-
                         });
-
                     }
-
                 });
-
             }
-
         });
 
 
@@ -700,7 +682,7 @@ public class ResetPasswordScreen implements Screen {
 
 
 
-                GameApi.resetPasswordWithOtp(userEmail, password, new GameApi.SendEmailCallback() { // Sửa tên phương thức và callback{
+                GameApi.resetPasswordWithOtp(userEmail, password, new GameApi.SendEmailCallback() {
 
                     @Override
 

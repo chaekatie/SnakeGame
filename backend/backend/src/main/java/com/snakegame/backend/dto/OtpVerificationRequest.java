@@ -1,8 +1,8 @@
 package com.snakegame.backend.dto;
 
 public class OtpVerificationRequest {
-    private String email; // Email của người dùng
-    private String otp;   // Mã OTP mà người dùng nhập
+    private String email;
+    private String otp;
 
     // Getters and Setters
     public String getEmail() {

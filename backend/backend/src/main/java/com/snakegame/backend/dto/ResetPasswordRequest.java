@@ -1,8 +1,8 @@
 package com.snakegame.backend.dto;
 
 public class ResetPasswordRequest {
-    private String email; // Email của người dùng để xác định tài khoản
-    private String newPassword; // Mật khẩu mới
+    private String email;
+    private String newPassword;
 
     // Getters and Setters
     public String getEmail() {

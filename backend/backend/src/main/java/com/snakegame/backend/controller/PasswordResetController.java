@@ -11,14 +11,12 @@ import com.snakegame.backend.dto.ResetPasswordRequest;
 public class PasswordResetController {
     @Autowired
     private PasswordResetService passwordResetService;
-
-    // Endpoint để yêu cầu gửi OTP
     @PostMapping("/forgot-password-request-otp")
-    // THAY ĐỔI: Từ @RequestParam String email sang @RequestBody OtpVerificationRequest request
-    public ResponseEntity<String> forgotPasswordRequestOtp(@RequestBody OtpVerificationRequest request) { // <-- Dòng này đã thay đổi
+
+    public ResponseEntity<String> forgotPasswordRequestOtp(@RequestBody OtpVerificationRequest request) {
         try {
-            // Lấy email từ request object. Trường otp sẽ là null nhưng không ảnh hưởng.
-            passwordResetService.generateAndSendOtp(request.getEmail()); // <-- Dòng này đã thay đổi
+
+            passwordResetService.generateAndSendOtp(request.getEmail());
             return ResponseEntity.ok("OTP has been sent to your email.");
         } catch (Exception e) {
             e.printStackTrace();
@@ -26,7 +24,6 @@ public class PasswordResetController {
         }
     }
 
-    // Endpoint để xác thực OTP (Giữ nguyên, vẫn dùng OtpVerificationRequest)
     @PostMapping("/verify-otp")
     public ResponseEntity<String> verifyOtp(@RequestBody OtpVerificationRequest request) {
         try {
@@ -38,7 +35,6 @@ public class PasswordResetController {
         }
     }
 
-    // Endpoint để đặt lại mật khẩu sau khi OTP đã được xác thực (Giữ nguyên)
     @PostMapping("/reset-password-with-otp")
     public ResponseEntity<String> resetPasswordWithOtp(@RequestBody ResetPasswordRequest request) {
         try {

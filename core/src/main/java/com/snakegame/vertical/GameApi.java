@@ -349,12 +349,13 @@ public class GameApi {
 
     // BƯỚC 1: Yêu cầu gửi OTP (gửi email quên mật khẩu)
 // Endpoint: http://localhost:8080/forgot-password-request-otp (nhận JSON body { "email": "..." })
-    public static void requestPasswordResetOtp(String email, SendEmailCallback callback){ // Đổi tên phương thức và callback
+    public static void requestPasswordResetOtp(String email, SendEmailCallback callback){
         HttpRequestBuilder builder = new HttpRequestBuilder();
         HttpRequest request = builder.newRequest()
             .method("POST")
-            .url(FORGOT_PASSWORD_URL) // Sử dụng hằng số đã định nghĩa
+            .url(FORGOT_PASSWORD_URL)
             .header("Content-Type", "application/json")
+            .timeout(10000)
             .build();
 
         String body = String.format("{\"email\":\"%s\"}", email);
@@ -368,7 +369,6 @@ public class GameApi {
                 System.out.println("STATUS CODE (request OTP): " + status);
                 System.out.println("RESPONSE (request OTP): " + response);
 
-                // Chạy callback trên UI thread
                 Gdx.app.postRunnable(() -> {
                     if(status == 200){ // Kiểm tra status code là 200 (OK)
                         callback.onSuccess(response);
@@ -392,13 +392,13 @@ public class GameApi {
 
     // BƯỚC 2: Xác thực OTP
 // Endpoint: http://localhost:8080/verify-otp (nhận JSON body { "email": "...", "otp": "..." })
-    public static void verifyOtp(String email, String otp, SendEmailCallback callback) { // Sử dụng SimpleApiCallback
+    public static void verifyOtp(String email, String otp, SendEmailCallback callback) {
         HttpRequestBuilder builder = new HttpRequestBuilder();
         HttpRequest request = builder.newRequest()
             .method("POST")
             .url("http://localhost:8080/verify-otp")
-            // Sử dụng hằng số đã định nghĩa BASE_URL_AUTH
             .header("Content-Type", "application/json")
+            .timeout(10000)
             .build();
 
         String body = String.format("{\"email\":\"%s\", \"otp\":\"%s\"}", email, otp);
@@ -439,8 +439,9 @@ public class GameApi {
         HttpRequestBuilder builder = new HttpRequestBuilder();
         HttpRequest request = builder.newRequest()
             .method("POST")
-            .url(RESET_PASSWORD_WITH_OTP_URL) // Sử dụng hằng số đã định nghĩa
+            .url(RESET_PASSWORD_WITH_OTP_URL)
             .header("Content-Type", "application/json")
+            .timeout(10000)
             .build();
 
         String body = String.format("{\"email\":\"%s\", \"newPassword\":\"%s\"}", email, newPassword);
