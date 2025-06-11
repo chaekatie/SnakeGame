@@ -514,21 +514,17 @@ public class GameScreen implements Screen {
                     if (velocityX > 0 && currentDirection != Direction.LEFT) {
                         Gdx.app.log("GameScreen", "Swipe RIGHT - sending direction RIGHT");
                         GameApi.sendDirection(Direction.RIGHT);
-                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
                     } else if (velocityX < 0 && currentDirection != Direction.RIGHT) {
                         Gdx.app.log("GameScreen", "Swipe LEFT - sending direction LEFT");
                         GameApi.sendDirection(Direction.LEFT);
-                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
                     }
                 } else {
                     if (velocityY < 0 && currentDirection != Direction.DOWN) {
                         Gdx.app.log("GameScreen", "Swipe UP - sending direction UP");
                         GameApi.sendDirection(Direction.UP);
-                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
                     } else if (velocityY > 0 && currentDirection != Direction.UP) {
                         Gdx.app.log("GameScreen", "Swipe DOWN - sending direction DOWN");
                         GameApi.sendDirection(Direction.DOWN);
-                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
                     }
                 }
                 return true;
