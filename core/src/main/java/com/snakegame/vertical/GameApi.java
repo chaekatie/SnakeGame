@@ -12,12 +12,12 @@ import com.badlogic.gdx.Preferences;
 
 public class GameApi {
 
-    private static final String BASE_URL = "http://localhost:8080/api/game";
-    private static final String BASE_URL_2 = "http://localhost:8080/api/auth";
-    private static final String BASE_URL_3 = "http://localhost:8080/api/scores";
-    private static final String BASE_URL_4 = "http://localhost:8080/api/matches";
-    private static final String FORGOT_PASSWORD_URL = "http://localhost:8080/forgot-password-request-otp";
-    private static final String RESET_PASSWORD_WITH_OTP_URL = "http://localhost:8080/reset-password-with-otp";
+    private static final String BASE_URL = "https://snake-backend-production.up.railway.app/api/game";
+    private static final String BASE_URL_2 = "https://snake-backend-production.up.railway.app/api/auth";
+    private static final String BASE_URL_3 = "https://snake-backend-production.up.railway.app/api/scores";
+    private static final String BASE_URL_4 = "https://snake-backend-production.up.railway.app/api/matches";
+    private static final String FORGOT_PASSWORD_URL = "https://snake-backend-production.up.railway.app/forgot-password-request-otp";
+    private static final String RESET_PASSWORD_WITH_OTP_URL = "https://snake-backend-production.up.railway.app/reset-password-with-otp";
     private static final String AUTH_TOKEN_KEY = "auth_token";
     private static boolean isLoggedIn;
 
