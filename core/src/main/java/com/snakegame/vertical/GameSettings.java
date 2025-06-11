@@ -374,6 +374,7 @@ public class GameSettings implements Screen {
                     hasChoseMap = true;
                     // Set bordered mode
                     GameApi.setBorderlessMode(false);
+                    game.setBorderlessMode(false);
                 }
             }
         });
@@ -386,6 +387,7 @@ public class GameSettings implements Screen {
                     hasChoseMap = true;
                     // Set borderless mode
                     GameApi.setBorderlessMode(true);
+                    game.setBorderlessMode(true);
                 }
             }
         });

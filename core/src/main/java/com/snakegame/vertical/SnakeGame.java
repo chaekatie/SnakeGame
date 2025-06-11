@@ -55,9 +55,11 @@ public class SnakeGame extends Game {
     public void setUsername(String username) { this.username = username; }
     public String getUsername() { return this.username; }
 
-    private boolean isLoggedIn = false;
-    public boolean getLoggedIn(){ return this.isLoggedIn; }
-    public void setLoggedIn(boolean isLoggedIn) { this.isLoggedIn = isLoggedIn; }
+    private boolean loggedIn = false;
+    private boolean borderlessMode = false;
+
+    public boolean getLoggedIn(){ return this.loggedIn; }
+    public void setLoggedIn(boolean isLoggedIn) { this.loggedIn = isLoggedIn; }
 
     // Store current volume levels
     private float sfxVolume;
@@ -90,6 +92,14 @@ public class SnakeGame extends Game {
         this.currentDifficulty = difficulty;
     }
     //endregion
+
+    public boolean getBorderlessMode() {
+        return borderlessMode;
+    }
+
+    public void setBorderlessMode(boolean borderless) {
+        this.borderlessMode = borderless;
+    }
 
     @Override
     public void create() {
