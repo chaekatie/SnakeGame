@@ -31,10 +31,10 @@ public class PrizeScreen implements Screen {
     private Texture background, achievement, board, record, detail;
     private Image backgroundImage, achievementLogo, boardImage;
     private ImageButton backButton, recordButton, detailButton;
-    private Label.LabelStyle customLabel, customLabel2;
+    private Label.LabelStyle customLabel, customLabel2, customLabel3;
     private Skin skin;
     private Table rowsTable;
-    private boolean isLoggedIn;
+    private boolean isLoggedIn, isMatchDetails;
     private Dialog matchDetailsDialog;
     private TextureRegionDrawable dialogDrawble;
     private int veryTotalScores, deadTimes, playTimes;
@@ -43,6 +43,7 @@ public class PrizeScreen implements Screen {
     public PrizeScreen(SnakeGame game){
         this.game = game;
         this.isLoggedIn = game.getLoggedIn();
+        this.isMatchDetails = true;
 
         OrthographicCamera camera = new OrthographicCamera();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
@@ -52,7 +53,7 @@ public class PrizeScreen implements Screen {
 
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("Montserrat-Bold.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter param = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        param.size = 32;
+        param.size = 28;
         param.color = Color.BLACK;
         BitmapFont myFont = generator.generateFont(param);
         generator.dispose();
@@ -61,9 +62,11 @@ public class PrizeScreen implements Screen {
         dialogDrawble = new TextureRegionDrawable(new TextureRegion(dialogTex));
 
         customLabel = new Label.LabelStyle();
-        customLabel.font = game.theBigFont;
+        customLabel.font = myFont;
         customLabel2 = new Label.LabelStyle();
         customLabel2.font = game.theSmallFont;
+        customLabel3 = new Label.LabelStyle();
+        customLabel3.font = game.theBigFont;
 
         veryTotalScores = deadTimes = playTimes = 0;
 
@@ -101,14 +104,17 @@ public class PrizeScreen implements Screen {
         float widthh = boardImage.getWidth();
         float heightt = boardImage.getHeight();
 
-        ScrollPane scrollPane = declareScrollPane(rowsTable, widthh - 100, heightt - 100);
-        scrollContainer.add(scrollPane).size(widthh - 100, heightt - 100).pad(0, 10, 50, 20);
-        boardStack.setSize(widthh - 100, heightt - 100);
-        boardStack.add(scrollContainer);
+        ScrollPane scrollPane = declareScrollPane(rowsTable, widthh - 100, heightt - 130);
+        scrollContainer.add(scrollPane).size(widthh - 100, heightt - 130).pad(0, 10, 50, 20);
+        boardStack.setSize(widthh - 100, heightt - 130);
+
+        Table headerTable = createHeaderTable(isMatchDetails, scrollContainer);
+        boardStack.add(headerTable);
 
         myScoresTable.add(boardStack).pad(10, 10, 10, 5);
         myScoresTable.pack();
-        myScoresTable.setPosition(backgroundImage.getX() + 100, backgroundImage.getY() + 600);
+        myScoresTable.setHeight(myScoresTable.getHeight() - 150);
+        myScoresTable.setPosition(backgroundImage.getX() + 100, backgroundImage.getY() + 660);
         stage.addActor(myScoresTable);
         //endregion
 
@@ -126,6 +132,14 @@ public class PrizeScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
+                isMatchDetails = false;
+
+                boardStack.clear();
+                ScrollPane scrollPane = declareScrollPane(rowsTable, boardImage.getWidth() - 100, boardImage.getHeight() - 100);
+                Table scrollContainer = new Table();
+                scrollContainer.add(scrollPane).size(boardImage.getWidth() - 100, boardImage.getHeight() - 100).pad(0, 10, 50, 20);
+                boardStack.add(createHeaderTable(isMatchDetails, scrollContainer));
+
                 loadMyScores();
             }
         });
@@ -142,6 +156,14 @@ public class PrizeScreen implements Screen {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(2f);
+                isMatchDetails = true;
+
+                boardStack.clear();
+                ScrollPane scrollPane = declareScrollPane(rowsTable, boardImage.getWidth() - 100, boardImage.getHeight() - 100);
+                Table scrollContainer = new Table();
+                scrollContainer.add(scrollPane).size(boardImage.getWidth() - 100, boardImage.getHeight() - 100).pad(0, 10, 50, 20);
+                boardStack.add(createHeaderTable(isMatchDetails, scrollContainer));
+
                 loadMatchDetail();
             }
         });
@@ -170,9 +192,9 @@ public class PrizeScreen implements Screen {
         frameImage.setPosition(backgroundImage.getX() + 180, backgroundImage.getY() + 200);
         //stage.addActor(frameImage);
 
-        totalDie = new Label("Total Dead: " + deadTimes, customLabel);
-        totalScores = new Label("Total Scores: " + veryTotalScores, customLabel);
-        totalPlaytime = new Label("Total Playing times: " + playTimes, customLabel);
+        totalDie = new Label("Total Dead: " + deadTimes, customLabel3);
+        totalScores = new Label("Total Scores: " + veryTotalScores, customLabel3);
+        totalPlaytime = new Label("Total Playing times: " + playTimes, customLabel3);
         Table summaryTable = new Table();
         summaryTable.add(totalDie).row();
         summaryTable.add(totalScores).row();
@@ -201,6 +223,14 @@ public class PrizeScreen implements Screen {
             public void changed(ChangeEvent event, Actor actor) {
                 if (weekBox.isChecked()) {
                     monthBox.setChecked(false);
+                    isMatchDetails = false;
+
+                    boardStack.clear();
+                    ScrollPane scrollPane = declareScrollPane(rowsTable, boardImage.getWidth() - 100, boardImage.getHeight() - 100);
+                    Table scrollContainer = new Table();
+                    scrollContainer.add(scrollPane).size(boardImage.getWidth() - 100, boardImage.getHeight() - 100).pad(0, 10, 50, 20);
+                    boardStack.add(createHeaderTable(isMatchDetails, scrollContainer));
+
                     loadScoresByWeek();
                 }
             }
@@ -210,6 +240,14 @@ public class PrizeScreen implements Screen {
             public void changed(ChangeEvent event, Actor actor) {
                 if (monthBox.isChecked()) {
                     weekBox.setChecked(false);
+                    isMatchDetails = false;
+
+                    boardStack.clear();
+                    ScrollPane scrollPane = declareScrollPane(rowsTable, boardImage.getWidth() - 100, boardImage.getHeight() - 100);
+                    Table scrollContainer = new Table();
+                    scrollContainer.add(scrollPane).size(boardImage.getWidth() - 100, boardImage.getHeight() - 100).pad(0, 10, 50, 20);
+                    boardStack.add(createHeaderTable(isMatchDetails, scrollContainer));
+
                     loadScoresByMonth();
                 }
             }
@@ -267,8 +305,6 @@ public class PrizeScreen implements Screen {
         matchDetailsDialog.button("Close", true);
         //endregion
 
-        // endregion
-
     }
 
     public ScrollPane declareScrollPane(Table table, float width, float height){
@@ -318,6 +354,8 @@ public class PrizeScreen implements Screen {
                     return;
                 }
 
+                veryTotalScores = deadTimes = playTimes = 0;
+
                 for (int i = 0; i < matchDetails.length; i++){
                     MatchDTO match = matchDetails[i];
 
@@ -349,13 +387,13 @@ public class PrizeScreen implements Screen {
         row.setBackground(skin.newDrawable("white", bgColor));
 
         Label rankLabel = new Label(String.valueOf(rank), customLabel);
-        rankLabel.setAlignment(Align.left);
+        rankLabel.setAlignment(Align.center);
 
         Label scoreLabel = new Label(String.valueOf(match.getTotalScore()), customLabel);
-        scoreLabel.setAlignment(Align.left);
+        scoreLabel.setAlignment(Align.center);
 
         Label timeLabel = new Label(String.valueOf(match.getPlayTime()), customLabel);
-        timeLabel.setAlignment(Align.left);
+        timeLabel.setAlignment(Align.center);
 
         // Add double-click listener
         row.addListener(new InputListener() {
@@ -483,6 +521,27 @@ public class PrizeScreen implements Screen {
             }
         });
     }
+
+    private Table createHeaderTable(boolean matchDetails, Table scrollContainer) {
+        Table header = new Table();
+        Label.LabelStyle style = matchDetails ? customLabel : customLabel2;
+
+        Label orderTitle = new Label("STT", style);
+        orderTitle.setAlignment(Align.center);
+        Label timeLabel = new Label(matchDetails ? "Total time" : "End time", style);
+        orderTitle.setAlignment(Align.center);
+        Label scoreLabel = new Label("Scores", style);
+        scoreLabel.setAlignment(Align.center);
+
+        header.add(orderTitle).width(matchDetails ? 50 : 30).pad(10, 10, 10, 20);
+        header.add(timeLabel).width(matchDetails ? 100 : 300).pad(10, 10, 10, 0);
+        header.add(scoreLabel).width(matchDetails ? 200 : 80).pad(10, 10, 10, 10);
+        header.row();
+        header.add(scrollContainer).colspan(3).padTop(10).row();
+
+        return header;
+    }
+
 
     @Override
     public void show() {

@@ -93,6 +93,7 @@ public class SettingScreen implements Screen {
             Texture chosenAva = avatarsTexture[i];
             final Image avatarImage = new Image(new TextureRegionDrawable(new TextureRegion(chosenAva)));
             avatarImage.setSize(300, 300);
+            avatarImage.setScale(1f);
             avatarImages.add(avatarImage);
 
             avatarImage.addListener(new ClickListener() {
@@ -104,7 +105,13 @@ public class SettingScreen implements Screen {
                     if(currentClicks == 1){
                         avatarImage.setScale(1.2f);
                         game.setChosenAvatar(chosenAva);
-                    } else { System.out.println("Multiple clicks (" + currentClicks + ") on " + chosenAva); }
+                    } else if(currentClicks == 2) {
+                        avatarImage.setScale(1f);
+                        clickCounts.set(index, 0); // Reset click count after deselection
+                    } else {
+                        System.out.println("Multiple clicks (" + currentClicks + ") on " + chosenAva);
+                        clickCounts.set(index, 0); // Reset click count if too many clicks
+                    }
                 }
             });
 
