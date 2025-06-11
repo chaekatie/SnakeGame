@@ -83,8 +83,40 @@ public class GameScreen implements Screen {
     private static final float SPECIAL_FOOD_ANIMATION_SPEED = 2f;
     private static final float GOLDEN_FOOD_ANIMATION_SPEED = 1.5f;
 
+    private GameStateManager gameStateManager;
+
     public GameScreen(SnakeGame game, Array<FoodType> selectedFoods, LayoutType selectedLayout){
         this.game = game;
+        this.gameStateManager = new GameStateManager();
+        this.startTime = LocalDateTime.now();
+        this.formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        this.selectedFoods = selectedFoods;
+        this.selectedLayout = selectedLayout;
+        eatenNormal = eatenSpecial = eatenGolden = 0;
+
+        // Initialize game state from server
+        GameApi.fetchGameState(new GameApi.GameStateCallback() {
+            @Override
+            public void onSuccess(GameStateDTO gameState) {
+                if (gameState == null) {
+                    Gdx.app.error("GameScreen", "Failed to get initial game state");
+                    return;
+                }
+                currentGameState = gameState;
+                gameStateManager.syncWithServerState(gameState);
+                updateScoreLabel();
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                Gdx.app.error("GameScreen", "Error getting initial game state", t);
+            }
+        });
+
+        // Set borderless mode
+        GameApi.setBorderlessMode(game.getBorderlessMode());
+        gameStateManager.setBorderlessMode(game.getBorderlessMode());
+
         OrthographicCamera camera = new OrthographicCamera();
         batch = new SpriteBatch();
         viewport = new FitViewport(game.V_WIDTH, game.V_HEIGHT, camera);
@@ -92,10 +124,6 @@ public class GameScreen implements Screen {
         skin = new Skin(Gdx.files.internal("uiskin.json"));
 
         this.isLoggedIn = game.getLoggedIn();
-        this.formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-        this.selectedFoods = selectedFoods;
-        this.selectedLayout = selectedLayout;
-        eatenNormal = eatenSpecial = eatenGolden = 0;
 
         Texture dialogTex = new Texture("backgrounds\\table.png");
         TextureRegionDrawable dialogDrawble = new TextureRegionDrawable(new TextureRegion(dialogTex));
@@ -105,13 +133,6 @@ public class GameScreen implements Screen {
 
         Label.LabelStyle customLabel1 = new Label.LabelStyle();
         customLabel1.font = game.theBigFont;
-
-        // Initialize with empty game state
-        currentGameState = new GameStateDTO();
-        currentGameState.snakeBody = new ArrayList<>();
-        currentGameState.foods = new ArrayList<>();
-        currentGameState.score = 0;
-        currentGameState.gameOver = false;
 
         //region Background
         backgroundTexture = new Texture("backgrounds\\bgempty.png");
@@ -184,6 +205,7 @@ public class GameScreen implements Screen {
             protected void result(Object object) {
                 if (object.equals("restart")) {
                     resetGame();
+                    isPaused = false;  // Unpause the game
                 } else {
                     // Reset game before going back to menu
                     GameApi.resetGame(new GameApi.GameStateCallback() {
@@ -233,8 +255,9 @@ public class GameScreen implements Screen {
             protected void result(Object object) {
                 if (object.equals("restart")) {
                     resetGame();
+                    isPaused = false;  // Unpause the game
                 } else if(object.equals("continue")) {
-                    isPaused = !isPaused; // Toggle pause state
+                    isPaused = false;  // Unpause the game
                     // Switch back to pause texture when continuing
                     pauseButton.getStyle().imageUp = pauseDrawable;
                 } else {
@@ -430,6 +453,23 @@ public class GameScreen implements Screen {
     }
 
     private void resetGame() {
+        // First reset local state
+        gameStateManager.reset();
+        this.startTime = LocalDateTime.now();
+        this.hasSavedScore = false;
+        this.hasSavedMatch = false;
+        this.eatenNormal = 0;
+        this.eatenSpecial = 0;
+        this.eatenGolden = 0;
+        this.totalScores = 0;
+
+        // Update UI
+        normalLabel.setText("(10): 0");
+        specialLabel.setText("(20): 0");
+        goldenLabel.setText("(30): 0");
+        startTimeLabel.setText("Start time: " + startTime.format(formatter));
+
+        // Then sync with server state
         GameApi.resetGame(new GameApi.GameStateCallback() {
             @Override
             public void onSuccess(GameStateDTO gameState) {
@@ -437,20 +477,15 @@ public class GameScreen implements Screen {
                     Gdx.app.error("GameScreen", "resetGame: Received null gameState from backend!");
                     return;
                 }
+                // Update local state with server state
                 currentGameState = gameState;
+                // Update local game state manager with server state
+                gameStateManager.syncWithServerState(gameState);
                 updateScoreLabel();
 
-                eatenNormal = eatenSpecial = eatenGolden = totalScores = 0;
-                hasSavedScore = isPaused = false;
-
-                // Update UI
-                normalLabel.setText("(10): 0");
-                specialLabel.setText("(20): 0");
-                goldenLabel.setText("(30): 0");
-
-                startTime = LocalDateTime.now();
-                startTimeLabel.setText("Start time: " + startTime.format(formatter));
-                System.out.println("START TIME: "+ startTime);
+                // Ensure borderless mode is set
+                GameApi.setBorderlessMode(game.getBorderlessMode());
+                gameStateManager.setBorderlessMode(game.getBorderlessMode());
 
                 Gdx.app.log("GameScreen", "Game reset successful. New snake size: " +
                     (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
@@ -459,6 +494,7 @@ public class GameScreen implements Screen {
             @Override
             public void onError(Throwable t) {
                 Gdx.app.error("GameScreen", "Error resetting game", t);
+                // If server reset fails, at least we have the local reset
             }
         });
     }
@@ -501,7 +537,8 @@ public class GameScreen implements Screen {
         GestureDetector gestureDetector = new GestureDetector(new GestureDetector.GestureAdapter() {
             @Override
             public boolean fling(float velocityX, float velocityY, int button) {
-                if (directionChangeCooldown > 0 || isPaused || currentGameState == null || currentGameState.gameOver) return false;
+                if (directionChangeCooldown > 0 || isPaused || currentGameState == null || currentGameState.gameOver)
+                    return false;
 
                 Direction currentDirection = null;
                 if (currentGameState.snakeBody != null && currentGameState.snakeBody.size() >= 2) {
@@ -512,29 +549,32 @@ public class GameScreen implements Screen {
 
                 if (Math.abs(velocityX) > Math.abs(velocityY)) {
                     if (velocityX > 0 && currentDirection != Direction.LEFT) {
-                        Gdx.app.log("GameScreen", "Swipe RIGHT - sending direction RIGHT");
-                        GameApi.sendDirection(Direction.RIGHT);
+                        Gdx.app.log("GameScreen", "Swipe RIGHT - changing direction RIGHT");
+                        gameStateManager.changeDirection(Direction.RIGHT);
+                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
                     } else if (velocityX < 0 && currentDirection != Direction.RIGHT) {
-                        Gdx.app.log("GameScreen", "Swipe LEFT - sending direction LEFT");
-                        GameApi.sendDirection(Direction.LEFT);
+                        Gdx.app.log("GameScreen", "Swipe LEFT - changing direction LEFT");
+                        gameStateManager.changeDirection(Direction.LEFT);
+                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
                     }
                 } else {
                     if (velocityY < 0 && currentDirection != Direction.DOWN) {
-                        Gdx.app.log("GameScreen", "Swipe UP - sending direction UP");
-                        GameApi.sendDirection(Direction.UP);
+                        Gdx.app.log("GameScreen", "Swipe UP - changing direction UP");
+                        gameStateManager.changeDirection(Direction.UP);
+                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
                     } else if (velocityY > 0 && currentDirection != Direction.UP) {
-                        Gdx.app.log("GameScreen", "Swipe DOWN - sending direction DOWN");
-                        GameApi.sendDirection(Direction.DOWN);
+                        Gdx.app.log("GameScreen", "Swipe DOWN - changing direction DOWN");
+                        gameStateManager.changeDirection(Direction.DOWN);
+                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
                     }
                 }
                 return true;
             }
         });
 
-        // Combine gesture + stage input
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(gestureDetector);
-        multiplexer.addProcessor(stage); // This allows your buttons/UI to still work
+        multiplexer.addProcessor(stage);
         Gdx.input.setInputProcessor(multiplexer);
     }
 
@@ -565,145 +605,104 @@ public class GameScreen implements Screen {
     }
 
     private void updateGame() {
-        GameApi.updateGame(new GameApi.GameStateCallback() {
-            @Override
-            public void onSuccess(GameStateDTO gameState) {
-                if (gameState == null) {
-                    Gdx.app.error("GameScreen", "updateGame: Received null gameState from backend!");
-                    return;
-                }
+        gameStateManager.update();
+        GameStateDTO gameState = gameStateManager.getGameState();
 
-                // Check if food was eaten by comparing scores
-                if (currentGameState != null && gameState.score > currentGameState.score) {
-                    // Find which food was eaten by comparing food lists
-                    for (GameStateDTO.FoodDTO oldFood : currentGameState.foods) {
-                        boolean foodStillExists = false;
-                        for (GameStateDTO.FoodDTO newFood : gameState.foods) {
-                            if (oldFood.position.x == newFood.position.x &&
-                                oldFood.position.y == newFood.position.y) {
-                                foodStillExists = true;
-                                break;
-                            }
-                        }
-                        if (!foodStillExists) {
-                            // Play sound based on the eaten food's type
-                            switch (oldFood.type) {
-                                case NORMAL:
-                                    game.normalFoodSound.play(game.getSfxVolume());
-                                    eatenNormal++;
-                                    normalLabel.setText("(10): " + eatenNormal);
-                                    break;
-                                case SPECIAL:
-                                    game.specialFoodSound.play(game.getSfxVolume());
-                                    eatenSpecial++;
-                                    specialLabel.setText("(20): " + eatenSpecial);
-                                    break;
-                                case GOLDEN:
-                                    game.goldenFoodSound.play(game.getSfxVolume());
-                                    eatenGolden++;
-                                    goldenLabel.setText("(30): " + eatenGolden);
-                                    break;
-                            }
+        if (gameState == null) {
+            Gdx.app.error("GameScreen", "updateGame: Received null gameState!");
+            return;
+        }
+
+        // Check if food was eaten by comparing scores
+        if (currentGameState != null && gameState.score > currentGameState.score) {
+            // Find which food was eaten by comparing food lists
+            for (GameStateDTO.FoodDTO oldFood : currentGameState.foods) {
+                boolean foodStillExists = false;
+                for (GameStateDTO.FoodDTO newFood : gameState.foods) {
+                    if (oldFood.position.x == newFood.position.x &&
+                        oldFood.position.y == newFood.position.y) {
+                        foodStillExists = true;
+                        break;
+                    }
+                }
+                if (!foodStillExists) {
+                    // Play sound based on the eaten food's type
+                    switch (oldFood.type) {
+                        case NORMAL:
+                            game.normalFoodSound.play(game.getSfxVolume());
+                            eatenNormal++;
+                            normalLabel.setText("(10): " + eatenNormal);
                             break;
-                        }
+                        case SPECIAL:
+                            game.specialFoodSound.play(game.getSfxVolume());
+                            eatenSpecial++;
+                            specialLabel.setText("(20): " + eatenSpecial);
+                            break;
+                        case GOLDEN:
+                            game.goldenFoodSound.play(game.getSfxVolume());
+                            eatenGolden++;
+                            goldenLabel.setText("(30): " + eatenGolden);
+                            break;
                     }
-                }
-
-                currentGameState = gameState;
-                updateScoreLabel();
-
-                Gdx.app.log("GameScreen", "Game updated successfully:");
-                Gdx.app.log("GameScreen", "- Snake size: " +
-                    (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
-                if (gameState.snakeBody != null && !gameState.snakeBody.isEmpty()) {
-                    GameStateDTO.PositionDTO head = gameState.snakeBody.get(0);
-                    Gdx.app.log("GameScreen", "- Snake head position: (" + head.x + ", " + head.y + ")");
-                }
-                Gdx.app.log("GameScreen", "- Score: " + gameState.score);
-                Gdx.app.log("GameScreen", "- Game Over: " + gameState.gameOver);
-
-                if (gameState.gameOver) {
-                    isPaused = true;
-                    endTime = LocalDateTime.now();
-                    System.out.println("START PLAY TIME: " + startTime);
-                    System.out.println("END PLAY TIME: " + endTime);
-                    totalScores = gameState.score;
-
-                    if (!hasSavedScore) {
-                        saveScores();
-                    }
-
-                    long minutes = ChronoUnit.MINUTES.between(startTime, endTime);
-                    long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
-                    long hours = ChronoUnit.HOURS.between(startTime, endTime);
-                    playTime = hours * 3600 + minutes * 60 + seconds;
-
-                    if (!hasSavedMatch) {
-                        saveMatchDetails();
-                    }
-
-                    gameOverDialog.show(stage);
-                    scoreMessage.setText("Total scores: " + gameState.score);
-                    playtimeMessage.setText("Playing time: " + hours + "h: " + minutes + "m: " + seconds + "s");
+                    break;
                 }
             }
-            @Override
-            public void onError(Throwable t) {
-                Gdx.app.error("GameScreen", "Error updating game", t);
-                t.printStackTrace();
+        }
+
+        currentGameState = gameState;
+        updateScoreLabel();
+
+        if (gameState.gameOver) {
+            isPaused = true;
+            endTime = LocalDateTime.now();
+            System.out.println("START PLAY TIME: " + startTime);
+            System.out.println("END PLAY TIME: " + endTime);
+            totalScores = gameState.score;
+
+            if (!hasSavedScore) {
+                saveScores();
             }
-        });
+
+            long minutes = ChronoUnit.MINUTES.between(startTime, endTime);
+            long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
+            long hours = ChronoUnit.HOURS.between(startTime, endTime);
+            playTime = hours * 3600 + minutes * 60 + seconds;
+
+            if (!hasSavedMatch) {
+                saveMatchDetails();
+            }
+
+            gameOverDialog.show(stage);
+            scoreMessage.setText("Total scores: " + gameState.score);
+            playtimeMessage.setText("Playing time: " + hours + "h: " + minutes + "m: " + seconds + "s");
+        }
     }
 
     private void handleInput() {
-
         // Only process direction changes if cooldown is 0 and game is not paused
         if (directionChangeCooldown <= 0 && !isPaused && currentGameState != null && !currentGameState.gameOver) {
-            Direction currentDirection = null;
-            if (currentGameState.snakeBody != null && currentGameState.snakeBody.size() >= 2) {
-                GameStateDTO.PositionDTO head = currentGameState.snakeBody.get(0);
-                GameStateDTO.PositionDTO neck = currentGameState.snakeBody.get(1);
-                currentDirection = getDirectionFromPositions(head, neck);
-            }
-
-            if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && currentDirection != Direction.DOWN) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
                 Gdx.app.log("GameScreen", "UP key pressed - sending direction UP");
-            GameApi.sendDirection(Direction.UP);
+                gameStateManager.changeDirection(Direction.UP);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
-            } else if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN) && currentDirection != Direction.UP) {
+            } else if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
                 Gdx.app.log("GameScreen", "DOWN key pressed - sending direction DOWN");
-            GameApi.sendDirection(Direction.DOWN);
+                gameStateManager.changeDirection(Direction.DOWN);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
-            } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && currentDirection != Direction.RIGHT) {
+            } else if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
                 Gdx.app.log("GameScreen", "LEFT key pressed - sending direction LEFT");
-            GameApi.sendDirection(Direction.LEFT);
+                gameStateManager.changeDirection(Direction.LEFT);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
-            } else if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && currentDirection != Direction.LEFT) {
+            } else if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
                 Gdx.app.log("GameScreen", "RIGHT key pressed - sending direction RIGHT");
-            GameApi.sendDirection(Direction.RIGHT);
+                gameStateManager.changeDirection(Direction.RIGHT);
                 directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
             }
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             Gdx.app.log("GameScreen", "R key pressed - resetting game");
-            GameApi.resetGame(new GameApi.GameStateCallback() {
-                @Override
-                public void onSuccess(GameStateDTO gameState) {
-                    if (gameState == null) {
-                        Gdx.app.error("GameScreen", "resetGame: Received null gameState from backend!");
-                        return;
-                    }
-                    currentGameState = gameState;
-                    updateScoreLabel();
-                    Gdx.app.log("GameScreen", "Game reset successful. New snake size: " +
-                        (gameState.snakeBody != null ? gameState.snakeBody.size() : 0));
-                }
-                @Override
-                public void onError(Throwable t) {
-                    Gdx.app.error("GameScreen", "Error resetting game", t);
-                }
-            });
+            resetGame();
         }
     }
 
