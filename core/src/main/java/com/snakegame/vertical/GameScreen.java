@@ -3,6 +3,7 @@ package com.snakegame.vertical;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -25,6 +26,8 @@ import com.badlogic.gdx.Input.Keys;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.input.GestureDetector;
+import com.badlogic.gdx.math.Vector2;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -118,7 +121,7 @@ public class GameScreen implements Screen {
         stage.addActor(backgroundImage);
         backgroundImage.toBack();
         //endregion
-        
+
         //region Textures and Sprites
         // Load snake textures
         snakeHeadTexture = new Texture("snake/head.png");
@@ -137,7 +140,7 @@ public class GameScreen implements Screen {
         bodySprite.setSize(cellSize, cellSize);
         tailSprite.setSize(cellSize, cellSize);
         cornerSprite.setSize(cellSize, cellSize);
-        
+
         // Load food textures
         System.out.println("FOOD ONE: " + selectedFoods.get(0).texturePath);
         System.out.println("FOOD TWO: " + selectedFoods.get(1).texturePath);
@@ -361,14 +364,14 @@ public class GameScreen implements Screen {
             public void clicked(InputEvent event, float x, float y) {
                 game.clicking.play(game.getSfxVolume());
                 isPaused = !isPaused; // Toggle pause state
-                
+
                 // Update button texture based on pause state
                 if (isPaused) {
                     pauseButton.getStyle().imageUp = playDrawable;
                 } else {
                     pauseButton.getStyle().imageUp = pauseDrawable;
                 }
-                
+
                 announcingDialog.show(stage);
             }
         });
@@ -382,7 +385,7 @@ public class GameScreen implements Screen {
         topBarTable.add(resetButton).pad(60, 10, 10, 10).center();
         topBarTable.add(soundBtnStack).pad(60,10,10,10).right();
         stage.addActor(topBarTable);
-        
+
         // Create score label
         font = new BitmapFont();
         font.getData().setScale(2);
@@ -459,7 +462,7 @@ public class GameScreen implements Screen {
             }
         });
     }
-    
+
     private void fetchGameState() {
         GameApi.fetchGameState(new GameApi.GameStateCallback() {
             @Override
@@ -486,15 +489,57 @@ public class GameScreen implements Screen {
             }
         });
     }
-    
+
     private void updateScoreLabel() {
         if (currentGameState != null) {
             scoreLabel.setText("SCORE: " + currentGameState.score);
         }
     }
-    
+
     @Override
     public void show() {
+        GestureDetector gestureDetector = new GestureDetector(new GestureDetector.GestureAdapter() {
+            @Override
+            public boolean fling(float velocityX, float velocityY, int button) {
+                if (directionChangeCooldown > 0 || isPaused || currentGameState == null || currentGameState.gameOver) return false;
+
+                Direction currentDirection = null;
+                if (currentGameState.snakeBody != null && currentGameState.snakeBody.size() >= 2) {
+                    GameStateDTO.PositionDTO head = currentGameState.snakeBody.get(0);
+                    GameStateDTO.PositionDTO neck = currentGameState.snakeBody.get(1);
+                    currentDirection = getDirectionFromPositions(head, neck);
+                }
+
+                if (Math.abs(velocityX) > Math.abs(velocityY)) {
+                    if (velocityX > 0 && currentDirection != Direction.LEFT) {
+                        Gdx.app.log("GameScreen", "Swipe RIGHT - sending direction RIGHT");
+                        GameApi.sendDirection(Direction.RIGHT);
+                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
+                    } else if (velocityX < 0 && currentDirection != Direction.RIGHT) {
+                        Gdx.app.log("GameScreen", "Swipe LEFT - sending direction LEFT");
+                        GameApi.sendDirection(Direction.LEFT);
+                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
+                    }
+                } else {
+                    if (velocityY < 0 && currentDirection != Direction.DOWN) {
+                        Gdx.app.log("GameScreen", "Swipe UP - sending direction UP");
+                        GameApi.sendDirection(Direction.UP);
+                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
+                    } else if (velocityY > 0 && currentDirection != Direction.UP) {
+                        Gdx.app.log("GameScreen", "Swipe DOWN - sending direction DOWN");
+                        GameApi.sendDirection(Direction.DOWN);
+                        directionChangeCooldown = DIRECTION_CHANGE_COOLDOWN;
+                    }
+                }
+                return true;
+            }
+        });
+
+        // Combine gesture + stage input
+        InputMultiplexer multiplexer = new InputMultiplexer();
+        multiplexer.addProcessor(gestureDetector);
+        multiplexer.addProcessor(stage); // This allows your buttons/UI to still work
+        Gdx.input.setInputProcessor(multiplexer);
     }
 
     @Override
@@ -509,20 +554,20 @@ public class GameScreen implements Screen {
             updateTimer = 0;
             }
         }
-        
+
         // Handle input
         handleInput();
-        
+
         // Rendering
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         stage.act(v);
         stage.draw();
-        
+
         drawGameObjects();
     }
-    
+
     private void updateGame() {
         GameApi.updateGame(new GameApi.GameStateCallback() {
             @Override
@@ -609,10 +654,8 @@ public class GameScreen implements Screen {
             }
         });
     }
-    
+
     private void handleInput() {
-        // Remove stage input processor temporarily to allow keyboard input
-        Gdx.input.setInputProcessor(null);
 
         // Only process direction changes if cooldown is 0 and game is not paused
         if (directionChangeCooldown <= 0 && !isPaused && currentGameState != null && !currentGameState.gameOver) {
@@ -662,9 +705,6 @@ public class GameScreen implements Screen {
                 }
             });
         }
-
-        // Restore stage input processor for UI elements
-        Gdx.input.setInputProcessor(stage);
     }
 
     private Direction getDirectionFromPositions(GameStateDTO.PositionDTO from, GameStateDTO.PositionDTO to) {
@@ -681,7 +721,7 @@ public class GameScreen implements Screen {
         if (dy < 0) return Direction.DOWN;
         return null;
     }
-    
+
     private void drawGameObjects() {
         if (currentGameState == null) {
             Gdx.app.log("GameScreen", "Current game state is null");
@@ -704,14 +744,14 @@ public class GameScreen implements Screen {
         // Set batch projection to match stage
         batch.setProjectionMatrix(stage.getCamera().combined);
         batch.begin();
-        
+
         // Draw snake
         List<GameStateDTO.PositionDTO> snakeBody = currentGameState.snakeBody;
         if (snakeBody != null) {
             Gdx.app.log("GameScreen", "Drawing snake with " + snakeBody.size() + " segments");
         for (int i = 0; i < snakeBody.size(); i++) {
             GameStateDTO.PositionDTO segment = snakeBody.get(i);
-            
+
             // Calculate screen position (centered grid)
                 float x = boardX + segment.x * cellSize;
                 float y = boardY + segment.y * cellSize;
@@ -751,17 +791,17 @@ public class GameScreen implements Screen {
                 currentSprite.draw(batch);
             }
         }
-        
+
         // Draw food
         if (currentGameState.foods != null) {
             Gdx.app.log("GameScreen", "Drawing " + currentGameState.foods.size() + " food items");
         for (GameStateDTO.FoodDTO food : currentGameState.foods) {
             Texture texture = getFoodTexture(food.type);
-            
+
             // Calculate screen position (centered grid)
             float x = boardTable.getX() + food.position.x * cellSize;
             float y = boardTable.getY() + food.position.y * cellSize;
-            
+
                 // Apply different effects based on food type
                 switch (food.type) {
                     case SPECIAL:
@@ -817,7 +857,7 @@ public class GameScreen implements Screen {
                 }
             }
         }
-        
+
         batch.end();
     }
 
@@ -952,7 +992,7 @@ public class GameScreen implements Screen {
             }
         });
     }
-    
+
     @Override
     public void resize(int i, int i1) {
         viewport.update(i, i1, true);
