@@ -61,6 +61,7 @@ public class PasswordResetService {
 
     @Transactional
     public void verifyOtp(String email, String otp) {
+        System.out.println("Reset password for email: " + email);
         User user = userRepository.findByEmail(email)
             .orElseThrow(() -> new RuntimeException("Email not found."));
 

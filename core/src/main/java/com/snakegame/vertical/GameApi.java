@@ -396,7 +396,7 @@ public class GameApi {
         HttpRequestBuilder builder = new HttpRequestBuilder();
         HttpRequest request = builder.newRequest()
             .method("POST")
-            .url("http://localhost:8080/verify-otp")
+            .url("https://snake-backend-production.up.railway.app/verify-otp")
             .header("Content-Type", "application/json")
             .timeout(10000)
             .build();
