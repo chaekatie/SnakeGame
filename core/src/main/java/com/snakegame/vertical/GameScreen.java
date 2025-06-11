@@ -73,7 +73,7 @@ public class GameScreen implements Screen {
 
     private Label scoreLabel, startTimeLabel, scoreMessage, playtimeMessage, detailsScoreMessage;
     private BitmapFont font;
-    private boolean isPaused = false, isLoggedIn, hasSavedScore, hasSavedMatch;
+    private boolean isPaused = false, isLoggedIn, hasSavedScore = false, hasSavedMatch = false;
     private Dialog gameOverDialog, announcingDialog;
     private DateTimeFormatter formatter;
 
@@ -629,14 +629,18 @@ public class GameScreen implements Screen {
                     System.out.println("END PLAY TIME: " + endTime);
                     totalScores = gameState.score;
 
-                    saveScores();
+                    if (!hasSavedScore) {
+                        saveScores();
+                    }
 
                     long minutes = ChronoUnit.MINUTES.between(startTime, endTime);
                     long seconds = ChronoUnit.SECONDS.between(startTime, endTime);
                     long hours = ChronoUnit.HOURS.between(startTime, endTime);
                     playTime = hours * 3600 + minutes * 60 + seconds;
 
-                    saveMatchDetails();
+                    if (!hasSavedMatch) {
+                        saveMatchDetails();
+                    }
 
                     gameOverDialog.show(stage);
                     scoreMessage.setText("Total scores: " + gameState.score);
