@@ -8,7 +8,6 @@ public class UserStatsResponse {
     private int totalPlayTime;
     private int highestScore;
 
-    // Constructor
     public UserStatsResponse(int totalMatches, int totalFood1, int totalFood2, int totalFood3, int totalPlayTime, int highestScore) {
         this.totalMatches = totalMatches;
         this.totalFood1 = totalFood1;

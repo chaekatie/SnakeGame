@@ -24,8 +24,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/game/**","/forgot-password-request-otp").permitAll()
-                .requestMatchers("/api/auth/login", "/api/auth/register", "/forgot-password", "/verify-otp","/reset-password-with-otp").permitAll()
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/forgot-password", "/verify-otp","/reset-password-with-otp","/api/game/**","/forgot-password-request-otp").permitAll()
                 .requestMatchers("/api/scores/**", "/api/matches/**").hasRole("USER")
                 .anyRequest().authenticated()
             )

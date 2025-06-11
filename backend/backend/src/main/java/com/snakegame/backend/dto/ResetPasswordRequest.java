@@ -4,7 +4,6 @@ public class ResetPasswordRequest {
     private String email;
     private String newPassword;
 
-    // Getters and Setters
     public String getEmail() {
         return email;
     }

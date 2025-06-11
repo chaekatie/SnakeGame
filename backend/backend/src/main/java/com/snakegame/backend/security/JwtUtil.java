@@ -12,7 +12,7 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    private final String SECRET_KEY = "your-very-secret-key-that-should-be-very-long";
+    private final String SECRET_KEY = "secret-key-secret-key-secret-key-secret-key";
 
     public String extractUsername(String token) {
         return extractAllClaims(token).getSubject();

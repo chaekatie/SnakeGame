@@ -1,6 +1,5 @@
 package com.snakegame.backend.repository;
 
-import com.snakegame.backend.model.PasswordResetToken;
 import com.snakegame.backend.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
