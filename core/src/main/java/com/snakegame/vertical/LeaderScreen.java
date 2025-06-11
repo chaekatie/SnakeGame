@@ -91,11 +91,27 @@ public class LeaderScreen implements Screen {
 
         ScrollPane scrollPane = declareScrollPane(rowsTable, widthh - 40, heightt - 150);
         scrollContainer.add(scrollPane).size(widthh - 40, heightt - 150).pad(0, -30, 50, 20);
-
         boardStack.add(boardImage);
         boardStack.setSize(widthh - 40, heightt - 120);
-        boardStack.add(scrollContainer);
+//        Label rankLabel = new Label("Rank", customLabel);
+//        rankLabel.setAlignment(Align.center);
+//        Label avaLabel = new Label("Avatar", customLabel);
+//        avaLabel.setAlignment(Align.center);
+//        Label nameLabel = new Label("Username", customLabel);
+//        nameLabel.setAlignment(Align.center);
+//        Label scoreLabel = new Label("Score", customLabel);
+//        scoreLabel.setAlignment(Align.center);
+//
+//        Table titleScoreTable = new Table();
+//        titleScoreTable.add(rankLabel).width(30).pad(10,10,10,20);
+//        titleScoreTable.add(avaLabel).size(64, 64).pad(10,10,10, 30);
+//        titleScoreTable.add(nameLabel).width(200).pad(10,10,10,20);
+//        titleScoreTable.add(scoreLabel).width(80).pad(10,10,10,10);
+//        titleScoreTable.add(scrollContainer).row();
+//
+//        boardStack.add(titleScoreTable);
 
+        boardStack.add(scrollContainer);
         allScoresTable.setFillParent(true);
         allScoresTable.add(boardStack).pad(0, 10, 10, 5);
         stage.addActor(allScoresTable);
