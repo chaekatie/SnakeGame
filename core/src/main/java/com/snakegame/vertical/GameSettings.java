@@ -193,14 +193,12 @@ public class GameSettings implements Screen {
         scrollPane.setSmoothScrolling(true);
         scrollPane.setSize(200 , 200);
         scrollPane.setPosition(300, 750);
-        scrollPane.setDebug(true);
 
         Table borderWrapper = new Table();
         borderWrapper.setSize(300, 200); // slightly bigger than ScrollPane
         borderWrapper.setBackground(new TextureRegionDrawable(new TextureRegion(new Texture("avatars\\borderframe.png"))));
         borderWrapper.add(scrollPane).size(200 , 200).center();
         borderWrapper.setPosition(300, 770);
-        borderWrapper.setDebug(true);
         stage.addActor(borderWrapper);
         //endregion
 
@@ -267,14 +265,12 @@ public class GameSettings implements Screen {
         scrollPane2.setSmoothScrolling(true);
         scrollPane2.setSize(200 , 200);
         scrollPane2.setPosition(300, 520);
-        scrollPane2.setDebug(true);
 
         Table borderWrapper2 = new Table();
         borderWrapper2.setSize(300, 200); // slightly bigger than ScrollPane
         borderWrapper2.setBackground(new TextureRegionDrawable(new TextureRegion(new Texture("avatars\\borderframe.png"))));
         borderWrapper2.add(scrollPane2).size(200 , 200).center();
         borderWrapper2.setPosition(300, 540);
-        borderWrapper2.setDebug(true);
         stage.addActor(borderWrapper2);
         //endregion
 

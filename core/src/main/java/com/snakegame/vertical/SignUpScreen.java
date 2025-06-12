@@ -142,7 +142,7 @@ public class SignUpScreen implements Screen {
         //endregion
 
         //region Sign Up Button
-        signupButton = new TextButton("SIGNUP", buttonStyle);
+        signupButton = new TextButton("", buttonStyle);
         signupButton.setSize(game.V_WIDTH/3, game.V_HEIGHT/12);
         signupButton.setPosition(
             baseBg.getX() + 250,
@@ -251,8 +251,6 @@ public class SignUpScreen implements Screen {
 //        });
 //        stage.addActor(nextBtn);
         //endregion
-
-        stage.setDebugAll(true);
     }
 
     public void dialogTextAnimation(Label text, boolean before){
